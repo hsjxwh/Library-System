@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.UserMapper">
+    <insert id="insertUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        insert into user(id,name,password,num,balance,has_service,borrow)
+            values (null,#{name},#{password},#{num},#{balance},#{hasService},0)
+    </insert>
+    <update id="updateUser">
+        update user
+            <set>
+                <if test="password!=null and password!=''">password=#{password},</if>
+                <if test="num!=null and num!=''">num=#{num}</if>
+            </set>
+        where id=#{id}
+    </update>
+    <update id="updateBorrow">
+        update user set borrow=#{borrow} where id=#{id}
+    </update>
+    <delete id="deleteUser" parameterType="User">
+        delete from user where id=#{id}
+    </delete>
+    <select id="selectAll" resultType="User">
+        select * from user
+    </select>
+    <select id="selectById" resultType="User">
+        select * from user where id=#{id}
+    </select>
+    <select id="selectPassword" resultType="java.lang.String">
+        select password from user where id=#{id}
+    </select>
+    <select id="hasUser" resultType="java.lang.Integer">
+        select count(*) from user where id=#{id}
+    </select>
+    <select id="getBorrow" resultType="java.lang.Integer">
+        select borrow from user where id=#{id}
+    </select>
+    <select id="getUserInfo" resultType="UserInfo">
+        select id,name,num,balance,has_service,borrow from user where id=#{id}
+    </select>
+    <select id="getBalance" resultType="java.lang.Double">
+        select balance from user where id=#{id}
+    </select>
+</mapper>

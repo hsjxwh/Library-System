@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.ProcessBookMapper">
+    <insert id="insertRecord">
+        insert into process_book(name,author,id,description,type,date)
+            values (#{record.name},#{record.author},#{record.id},#{record.description},#{record.type},#{record.date})
+    </insert>
+    <delete id="deleteRecord">
+        delete from process_book where id=#{id} and date=#{date}
+    </delete>
+    <select id="selectAllRecords" resultType="ProcessBook">
+        select * from process_book
+    </select>
+
+</mapper>

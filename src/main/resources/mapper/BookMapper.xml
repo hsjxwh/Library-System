@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.BookMapper">
+    <resultMap id="BookResultMap" type="ShowBook">
+        <id property="id" column="id"/>
+        <result property="bookId" column="book_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="managerId1" column="manager_id1"/>
+        <result property="managerId2" column="manager_id2"/>
+        <result property="time" column="time" javaType="java.time.LocalDateTime"/>
+        <result property="expectedReturnTime" column="expected_return_time" javaType="java.time.LocalDateTime"/>
+        <result property="returnTime" column="return_time" javaType="java.time.LocalDateTime"/>
+        <result property="restitution" column="restitution"/>
+        <result property="deposit" column="deposit"/>
+        <result property="name" column="name"/>
+        <result property="author" column="author"/>
+        <result property="renewTime" column="renew_time"></result>
+    </resultMap>
+    <insert id="insertBook" useGeneratedKeys="true" keyProperty="id">
+        insert into book(book_id,user_id,manager_id1,time,expected_return_time,id,restitution,renew_time)
+            values (#{bookId},#{userId},#{managerId1},#{time},#{expectedReturnTime},null,false,0)
+    </insert>
+    <update id="updateBook">
+        update book
+            <choose>
+               <when test="returnTime!=null">set return_time=#{returnTime},deposit=#{deposit},manager_id2=#{managerId},restitution=true</when>
+                <otherwise>set expected_return_time=#{expectedReturnTime},manager_id2=#{managerId},</otherwise>
+            </choose>
+        where id=#{id}
+    </update>
+    <update id="updateReturnTime">
+        update book set renew_time=#{renewTime} where id=#{id}
+    </update>
+    <delete id="deleteBook">
+        delete from book where id=#{id}
+    </delete>
+    <delete id="deleteAllBooksBook">
+        delete from book where book_id=#{bookId}
+    </delete>
+    <select id="selectAllBook" resultMap="BookResultMap">
+        select
+            a.id as id,
+            a.book_id as book_id,
+            a.user_id as user_id,
+            a.manager_id1 as manager_id1,
+            a.manager_id2 as manager_id2,
+            a.time as time,
+            a.expected_return_time as expected_return_time,
+            a.return_time as return_time,
+            a.restitution as restitution,
+            a.deposit as deposit,
+            b.name as name,
+            b.author as author,
+            a.renew_time as renew_time
+        from
+            book a
+            left join books b on a.book_id=b.id
+    </select>
+    <select id="selectSomeoneBook" resultMap="BookResultMap">
+        select
+            a.id as id,
+            a.book_id as book_id,
+            a.user_id as user_id,
+            a.manager_id1 as manager_id1,
+            a.manager_id2 as manager_id2,
+            a.time as time,
+            a.expected_return_time as expected_return_time,
+            a.return_time as return_time,
+            a.restitution as restitution,
+            a.deposit as deposit,
+            b.name as name,
+            b.author as author,
+            a.renew_time as renew_time
+        from
+            book a
+            left join books b on a.book_id=b.id
+        where user_id=#{id}
+    </select>
+    <select id="getBooksBookNum" resultType="java.lang.Long">
+        select count(*) from book where book_id=#{bookId}
+    </select>
+    <select id="hasThisBook" resultType="java.lang.Integer">
+        select count(*) from book where id=#{id}
+    </select>
+    <select id="selectAllBooksBook" resultType="java.lang.Integer">
+        select id from book where book_id=#{bookId}
+    </select>
+    <select id="selectAllBookRecord" resultMap="BookResultMap">
+        select
+            a.id as id,
+            a.book_id as book_id,
+            a.user_id as user_id,
+            a.manager_id1 as manager_id1,
+            a.manager_id2 as manager_id2,
+            a.time as time,
+            a.expected_return_time as expected_return_time,
+            a.return_time as return_time,
+            a.restitution as restitution,
+            a.deposit as deposit,
+            b.name as name,
+            b.author as author,
+            a.renew_time as renew_time
+        from
+            book a
+        left join books b on a.book_id=b.id
+        <where>
+            <if test="id!=-1">
+                a.book_id=#{id}
+            </if>
+            <if test="name!=null and name!=''">
+                and b.name=#{name}
+            </if>
+            <if test="author!=null and author!=''">
+                and b.author=#{author}
+            </if>
+        </where>
+    </select>
+    <select id="getRenewTime" resultType="java.lang.Integer">
+        select renew_time from book where id=#{id}
+    </select>
+</mapper>

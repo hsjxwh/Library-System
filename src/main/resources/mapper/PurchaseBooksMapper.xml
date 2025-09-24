@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.PurchaseBooksMapper">
+    <insert id="insertRecord">
+        insert into purchase_books(name,author,description,head,type)
+            values (#{record.name},#{record.author},#{record.description},#{record.head},#{record.type})
+    </insert>
+    <delete id="deleteRecord">
+        delete from purchase_books where author=#{author} and name=#{name}
+    </delete>
+    <select id="selectAllRecords" resultType="PurchaseBooks">
+        select * from purchase_books
+    </select>
+</mapper>

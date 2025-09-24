@@ -1,0 +1,207 @@
+package org.powernode.springboot.tool;
+
+import io.jsonwebtoken.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.powernode.springboot.exception.HaveNotAdminAuthority;
+import org.powernode.springboot.exception.NotLoggedInException;
+import org.powernode.springboot.exception.WrongCsrfError;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.UUID;
+
+public final class JwtTool {
+    //一个登录的身份jwt能维持多长时间,3小时
+    private static final long time=1000*60*60*3;
+
+    private static final String signWith="l!ibrary@aaa,./?";
+    private static final String signRandom ="c,s?.r58f";
+
+    //生成验证请求身份的jwtToken
+    public static String getJwt(long id,String role,String csrfToken){
+        String randomTokenHash=hmacSha256(csrfToken);
+        String res=  Jwts.builder()
+                //类型
+                .setHeaderParam("typ","JWT")
+                //算法
+                .setHeaderParam("alg","HS256")
+                .claim("id",id)
+                .claim("role",role)
+                .claim("csrfToken",randomTokenHash)
+                //设置过期时间
+                .setExpiration(new Date(System.currentTimeMillis()+time))
+                //设置唯一标识
+                .setId(UUID.randomUUID().toString())
+                //用户标识
+                .setSubject(String.valueOf(id))
+                //签名
+                .signWith(SignatureAlgorithm.HS256,signWith)
+                .compact();
+        System.out.println("Generated JWT: " + res);
+        return res;
+    }
+
+    //生成二维码的jwtToken
+    public static String getQR(long id, String role, LocalDateTime time,long QrTime){
+        String res=  Jwts.builder()
+                //类型
+                .setHeaderParam("typ","JWT")
+                //算法
+                .setHeaderParam("alg","HS256")
+                .claim("id",id)
+                .claim("role",role)
+                .claim("time",time.toInstant(ZoneOffset.UTC).toEpochMilli() )
+                //设置过期时间
+                .setExpiration(new Date(System.currentTimeMillis()+QrTime))
+                //设置唯一标识
+                .setId(UUID.randomUUID().toString())
+                //用户标识
+                .setSubject(String.valueOf(id))
+                //签名
+                .signWith(SignatureAlgorithm.HS256,signWith)
+                .compact();
+        System.out.println("Generated JWT: " + res);
+        return res;
+    }
+
+    //生成二维码的jwtToken
+    public static String getQR(long id, String role, LocalDateTime time,long QrTime,String device){
+        String res=  Jwts.builder()
+                //类型
+                .setHeaderParam("typ","JWT")
+                //算法
+                .setHeaderParam("alg","HS256")
+                .claim("id",id)
+                .claim("role",role)
+                .claim("device",device)
+                .claim("time",time.toInstant(ZoneOffset.UTC).toEpochMilli() )
+                //设置过期时间
+                .setExpiration(new Date(System.currentTimeMillis()+QrTime))
+                //设置唯一标识
+                .setId(UUID.randomUUID().toString())
+                //用户标识
+                .setSubject(String.valueOf(id))
+                //签名
+                .signWith(SignatureAlgorithm.HS256,signWith)
+                .compact();
+        System.out.println("Generated JWT: " + res);
+        return res;
+    }
+
+    //设置前端的cookie
+    public static void setCookie(HttpServletResponse response,Long id, String role){
+        String csrfToken = UUID.randomUUID().toString();
+        String jwt=getJwt(id,role,csrfToken);
+        //将jwt添加到httponly cookie
+        response.addHeader("Set-Cookie",
+                "jwtToken=" + jwt +
+                    "; Path=/;" +  // 分号+空格分隔
+                    "HttpOnly;" +  // 禁止JS访问
+                    "Secure;" +    // HTTPS环境必需
+                    "SameSite=None;" +  // 跨域请求允许携带
+                    "Max-Age=" + time/1000);
+        //设置csrf token到httponly cookie
+        response.addHeader("Set-Cookie",
+                "CSRF-TOKEN=" + csrfToken +
+                    "; Path=/;" +
+                    "Secure;" +
+                    "SameSite=None;" +
+                    "Max-Age=" + time/1000);
+    }
+
+    //专门检查jwt是否合法的
+    public static Claims checkJwt(String jwt){
+        if(jwt==null){
+            return null;
+        }
+        JwtParser parser = Jwts.parser();
+        return parser.setSigningKey(signWith).parseClaimsJws(jwt).getBody();
+    }
+
+    public static long getId(String jwt){
+        Claims claims=checkJwt(jwt);
+        if(jwt==null||jwt.isEmpty()||claims==null){
+            throw new NotLoggedInException("未登录，请登录后进行操作");
+        }
+        return Long.parseLong(claims.get("id").toString());
+    }
+
+    //在cookie中找到jwt并进行检查
+    public static void findJwt(HttpServletRequest request,Cookie[] cookies,String wantRole){
+        if(cookies==null)
+            throw new NotLoggedInException("未登录，请登录后进行操作");
+        String jwt=null;
+        //遍历 Cookie，找到存储 JWT 的那个
+        for(Cookie cookie:cookies){
+            if("jwtToken".equals(cookie.getName())){
+                jwt = cookie.getValue();
+                break;
+            }
+        }
+        Claims claims;
+        claims=checkJwt(jwt);
+        if(jwt==null||jwt.isEmpty()||claims==null){
+            throw new NotLoggedInException("未登录，请登录后进行操作");
+        }
+        //获取用户的信息
+        String role=claims.get("role").toString();
+        long id=Long.parseLong(claims.get("id").toString());
+        //设置权限
+        JwtTool.setAuthentication(id,role);
+        checkCsrf(request,claims);
+        TokenContext.setCurrentId(id);
+        if(wantRole!=null&&wantRole.equals("manager")){
+            if(!role.equals("manager"))
+                throw new HaveNotAdminAuthority("没有管理员权限");
+        }
+    }
+
+
+    //检查csrf结果是否
+    public static void checkCsrf(HttpServletRequest request, Claims claims){
+        String csrfToken=claims.get("csrfToken").toString();
+        String csrfTokenHeader = request.getHeader("X-CSRF-TOKEN");
+        if(csrfTokenHeader==null||csrfToken==null||csrfTokenHeader.isEmpty()||csrfToken.isEmpty()||!csrfToken.equals(hmacSha256(csrfTokenHeader))){
+            throw new WrongCsrfError("权限错误，请重新登录");
+        }
+    }
+
+    //设置认证令牌
+    public static void setAuthentication(long id,String authority){
+        //创建权限令牌
+        SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority("ROLE_"+authority);
+        //创建身份证
+        Authentication authentication=new UsernamePasswordAuthenticationToken(id,null, Collections.singletonList(simpleGrantedAuthority));
+        SecurityContext securityContext=SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
+
+    //加密
+    public static String hmacSha256(String data) {
+        try {
+            Mac hmac=Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec=new SecretKeySpec(signRandom.getBytes(StandardCharsets.UTF_8),"HmacSHA256");
+            hmac.init(secretKeySpec);
+            byte[] hash=hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}

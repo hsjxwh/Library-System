@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.BooksMapper">
+    <resultMap id="ChartResultMap" type="Chart">
+        <result column="name" property="name"/>
+        <result column="time" property="time"/>
+    </resultMap>
+    <insert id="insertBook" useGeneratedKeys="true"  keyProperty="books.id">
+        insert into books(id,name,state,author,price,description,type,head)
+            values (null,#{books.name},#{books.state},#{books.author},#{books.price},#{books.description},#{books.type},#{books.head})
+    </insert>
+    <update id="updateState">
+        update books set state=#{state} where id=#{id}
+    </update>
+    <delete id="deleteBook">
+        delete from books where id=#{id}
+    </delete>
+    <select id="selectBook" resultType="Books">
+        select * from books where id=#{id}
+    </select>
+    <select id="selectAllBooksByAuthor" resultType="Books">
+        select * from books where author=#{author}
+    </select>
+    <select id="selectAllBooksByTitle" resultType="Books">
+        select * from books where name=#{name}
+    </select>
+    <select id="selectAllBooks" resultType="Books">
+        select * from books
+    </select>
+    <select id="selectAllBooksInThisCondition" resultType="Books">
+        select * from books
+        <where>
+            <if test="name !=null and name !=''">
+                and name like concat('%',#{name},'%')
+            </if>
+            <if test="author!=null and author !=''">
+                and author=#{author}
+            </if>
+            <if test="type!=null and type !=''">
+                and type like concat('%',#{type},'%')
+            </if>
+            <if test="state!=null and state!='' ">
+                and state=#{state}
+            </if>
+            <if test="heads !=null and heads.length!=0 ">
+                and (
+                <foreach collection="heads" item="head" separator="or">
+                    head=#{head}
+                </foreach>
+                )
+            </if>
+        </where>
+    </select>
+    <select id="hasBook" resultType="java.lang.Integer">
+        select count(*) from  books where name=#{name} and author=#{author}
+    </select>
+    <select id="selectChart" resultMap="ChartResultMap">
+        select
+            a.name as name,b.time as time
+        from
+            books a left join borrow_time b on a.id=b.id
+        where
+            b.time>0
+        ORDER BY
+            b.time desc
+        limit
+            20
+    </select>
+    <select id="getBookId" resultType="java.lang.Integer">
+        select id from books where author=#{author} and name=#{name}
+    </select>
+</mapper>

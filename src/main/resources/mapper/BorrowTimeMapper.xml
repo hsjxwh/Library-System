@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.BorrowTimeMapper" >
+    <insert id="insertBorrow">
+        insert into borrow_time(id,time)
+            values (#{id},0)
+    </insert>
+    <delete id="deleteBorrow">
+        delete from borrow_time where id=#{id}
+    </delete>
+    <update id="updateBorrow">
+        update borrow_time set time =#{time} where id=#{id}
+    </update>
+    <select id="searchBorrow" resultType="java.lang.Long">
+        select time from borrow_time where id=#{id}
+    </select>
+    <select id="selectBorrowTime" resultType="BorrowTime">
+        select * from borrow_time
+    </select>
+</mapper>
