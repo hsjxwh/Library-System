@@ -21,8 +21,9 @@ public class ShowBook {
     double deposit;
     long managerId2;
     int renewTime;
+    long orderId=-1;
 
-    public ShowBook(long id, long bookId, long userId, String name, String author, LocalDateTime time, LocalDateTime expectedReturnTime, LocalDateTime returnTime, long managerId1, boolean restitution, double deposit, long managerId2, int renewTime) {
+    public ShowBook(long id, long bookId, long userId, String name, String author, LocalDateTime time, LocalDateTime expectedReturnTime, LocalDateTime returnTime, long managerId1, boolean restitution, double deposit, long managerId2, int renewTime,long orderId) {
         this.id = id;
         this.bookId = bookId;
         this.userId = userId;
@@ -36,6 +37,7 @@ public class ShowBook {
         this.deposit = deposit;
         this.managerId2 = managerId2;
         this.renewTime = renewTime;
+        this.orderId = orderId;
     }
 
     public ShowBook() {

@@ -14,7 +14,7 @@ public class User {
     //余额
     double balance;
     //服务模式
-    //为0无服务，为1则初始押金为100，为22则初始押金为50
+    //为0无服务，为1则初始押金为50，为22则初始押金为100
     int hasService;
     //已经借阅的书籍的数量
     int borrow;

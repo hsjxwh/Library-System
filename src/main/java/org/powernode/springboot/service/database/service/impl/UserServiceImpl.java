@@ -37,6 +37,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     @TransactionFail
+    public int updateBalance(long id, double balance) {
+        double oldBalance = userMapper.getBalance(id);
+        double newBalance = balance + oldBalance;
+        return userMapper.updateBalance(id, newBalance);
+    }
+
+    @Override
+    @Transactional
+    @TransactionFail
     public int deleteUser(long id) {
         if(userMapper.deleteUser(id)<=0)
             return -1;

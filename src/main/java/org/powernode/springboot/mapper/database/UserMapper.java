@@ -15,7 +15,10 @@ public interface UserMapper {
     int hasUser(long id);
     String selectPassword(long id);
     int getBorrow(long id);
+    int getServiceType(long id);
     int updateBorrow(@Param("id") long id, @Param("borrow") int borrow);
+    int updateServiceType(@Param("id") long id, @Param("serviceType") int serviceType);
+    int updateBalance(@Param("id") long id, @Param("balance") double balance);
     UserInfo getUserInfo(long id);
     double getBalance(long id);
 }

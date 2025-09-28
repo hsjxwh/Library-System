@@ -16,6 +16,12 @@
     <update id="updateBorrow">
         update user set borrow=#{borrow} where id=#{id}
     </update>
+    <update id="updateServiceType">
+        update user set has_service=#{serviceType} where id=#{id}
+    </update>
+    <update id="updateBalance">
+        update user set balance=#{balance} where id=#{id}
+    </update>
     <delete id="deleteUser" parameterType="User">
         delete from user where id=#{id}
     </delete>
@@ -39,5 +45,8 @@
     </select>
     <select id="getBalance" resultType="java.lang.Double">
         select balance from user where id=#{id}
+    </select>
+    <select id="getServiceType" resultType="java.lang.Integer">
+        select has_service from user where id=#{id}
     </select>
 </mapper>

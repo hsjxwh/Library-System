@@ -26,4 +26,6 @@ public interface BookMapper {
     int updateReturnTime(@Param("id") long id, @Param("renewTime")int renewTime);
     int hasThisBook(long id);
     long getBooksBookNum(long bookId);
+    int hasOrders(long id);
+    long getBookOrderId(long id);
 }

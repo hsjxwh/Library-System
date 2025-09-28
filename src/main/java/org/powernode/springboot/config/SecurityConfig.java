@@ -47,7 +47,7 @@ public class SecurityConfig {
                         .requestMatchers(openApi).permitAll()
                         .requestMatchers(loginApi).hasAnyRole("user","manager")
                         .requestMatchers(managerApi).hasRole("manager")
-                        .anyRequest().permitAll())
+                        .anyRequest().denyAll())
                         ;
         return http.build();
     }

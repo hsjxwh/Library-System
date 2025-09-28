@@ -17,4 +17,6 @@ public interface BookService {
     List<ShowBook> selectAllBook();
     List<ShowBook> selectSomeoneBook(long userId);
     List<ShowBook> selectAllBook(String name, String author, long id);
+    boolean hasOrder(long id);
+    long getBookOrderId(long id);
 }

@@ -28,6 +28,8 @@ public class Book {
     double deposit;
     //续借次数
     int renewTime;
+    //假如扣除了押金，此为交易的订单编号
+    long orderId;
 
     public Book(long bookId, long userId, long managerId1, LocalDateTime time, LocalDateTime expectedReturnTime, LocalDateTime returnTime,long managerId2, long id, boolean restitution, double deposit, int renewTime) {
         this.bookId = bookId;
@@ -41,6 +43,21 @@ public class Book {
         this.restitution = restitution;
         this.deposit = deposit;
         this.renewTime = renewTime;
+    }
+
+    public Book(long bookId, long userId, long managerId1, LocalDateTime time, LocalDateTime expectedReturnTime, LocalDateTime returnTime,long managerId2, long id, boolean restitution, double deposit, int renewTime,long orderId) {
+        this.bookId = bookId;
+        this.userId = userId;
+        this.managerId1 = managerId1;
+        this.time = time;
+        this.managerId2 = managerId2;
+        this.expectedReturnTime = expectedReturnTime;
+        this.id = id;
+        this.returnTime = returnTime;
+        this.restitution = restitution;
+        this.deposit = deposit;
+        this.renewTime = renewTime;
+        this.orderId = orderId;
     }
 
     @Override

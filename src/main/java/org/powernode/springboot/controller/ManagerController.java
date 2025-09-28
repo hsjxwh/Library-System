@@ -1,12 +1,13 @@
 package org.powernode.springboot.controller;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.powernode.springboot.bean.database.Book;
 import org.powernode.springboot.bean.database.Books;
 import org.powernode.springboot.bean.database.ProcessBook;
 import org.powernode.springboot.bean.database.PurchaseBooks;
 import org.powernode.springboot.bean.vo.ImportBooksByExcelRes;
+import org.powernode.springboot.bean.vo.ManagerShowOrders;
 import org.powernode.springboot.bean.vo.RenewMessage;
 import org.powernode.springboot.bean.vo.ShowBook;
 import org.powernode.springboot.service.database.service.*;
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -42,9 +44,12 @@ public class ManagerController {
     private final PurchaseBooksService purchaseBooksService;
     private final BookService  bookService;
     private final ScoreService scoreService;
+    private final OrdersService ordersService;
     //一此jwtToken的有效时长
     private final long websocketConnectToken=1000*60*8;
-    ManagerController(ManagerService managerService, BooksExcelService booksExcelService, BooksService booksService, ProcessBookService processBookService, PurchaseBooksService purchaseBooksService, BookService bookService, ScoreService scoreService) {
+    private final UserService userService;
+
+    ManagerController(ManagerService managerService, BooksExcelService booksExcelService, BooksService booksService, ProcessBookService processBookService, PurchaseBooksService purchaseBooksService, BookService bookService, ScoreService scoreService, OrdersService ordersService, UserService userService) {
         this.managerService = managerService;
         this.booksExcelService = booksExcelService;
         this.booksService = booksService;
@@ -52,6 +57,8 @@ public class ManagerController {
         this.purchaseBooksService = purchaseBooksService;
         this.bookService = bookService;
         this.scoreService = scoreService;
+        this.ordersService = ordersService;
+        this.userService = userService;
     }
 
     @PostMapping("/checkManagerPassword")
@@ -210,17 +217,16 @@ public class ManagerController {
     }
 
     @PostMapping("/addBookRecord")
-    ResponseEntity<String> addBookRecord(String name,String author,long id){
-        logger.info("管理员{}正在插入读者编号为{}的读者借阅{}的{}的记录",TokenContext.getCurrentId(),id,author,name);
+    ResponseEntity<String> addBookRecord(long bookId,long id){
+        logger.info("管理员{}正在插入读者编号为{}的读者借阅图书编号为{}的书籍的记录",TokenContext.getCurrentId(),id,bookId);
         LocalDateTime now=LocalDateTime.now();
         LocalDateTime after30Days = now.plusDays(30);
-        int bookId=booksService.getBookId(name,author);
         if(bookService.insertBook(bookId,id,TokenContext.getCurrentId(),now,after30Days)>0){
-            logger.info("管理员{}插入读者编号为{}的读者借阅{}的{}的记录成功",TokenContext.getCurrentId(),id,author,name);
+            logger.info("管理员{}插入读者编号为{}的读者借阅图书编号为{}的书籍的记录成功",TokenContext.getCurrentId(),id,bookId);
             return ResponseEntity.status(200).body("加入记录成功");
         }
         else{
-            logger.info("管理员{}插入读者编号为{}的读者借阅{}的{}的记录失败",TokenContext.getCurrentId(),id,author,name);
+            logger.info("管理员{}插入读者编号为{}的读者借阅图书编号为{}的书籍的记录失败",TokenContext.getCurrentId(),id,bookId);
             return ResponseEntity.status(500).body("操作失败");
         }
     }
@@ -247,7 +253,7 @@ public class ManagerController {
         if(!device.equals("pc")){
             return ResponseEntity.status(400).body("只有电脑端能够获取websocket连接所需要的token");
         }
-        return ResponseEntity.status(200).body(JwtTool.getQR(TokenContext.getCurrentId(),"manager",time,websocketConnectToken,device));
+        return ResponseEntity.status(200).body(JwtTool.getConnectQr(TokenContext.getCurrentId(),"manager",time,websocketConnectToken,device));
     }
 
     @PostMapping("/returnBook")
@@ -272,9 +278,35 @@ public class ManagerController {
         }
     }
 
-//    //验证客户的身份
-//    @PostMapping("/verifyQR")
-//    ResponseEntity<String> verifyQR(){
-//
-//    }
+    @GetMapping("/getAllOrders")
+    ResponseEntity<List<ManagerShowOrders>> getOrdersRecord(){
+        logger.info("编号为{}的管理员请求获取所有订单记录",TokenContext.getCurrentId());
+        return ResponseEntity.status(200).body(ordersService.getAllOrders());
+    }
+
+    @GetMapping("/getSomeoneOrders")
+    ResponseEntity<List<ManagerShowOrders>> getSomeoneOrders(long userId){
+        logger.info("编号为{}的管理员请求获取编号为{}的用户的所有订单记录",TokenContext.getCurrentId(),userId);
+        return ResponseEntity.status(200).body(ordersService.managerGetSomeoneOrders(userId));
+    }
+
+    @GetMapping("/getSpecialOrder")
+    ResponseEntity<List<ManagerShowOrders>> getSpecialOrder(long id){
+        logger.info("编号为{}的管理员请求获取编号为{}的订单记录",TokenContext.getCurrentId(),id);
+        ManagerShowOrders managerShowOrders=ordersService.managerGetOrdersByOrder(id);
+        return ResponseEntity.status(200).body(managerShowOrders==null?new ArrayList<>():List.of(managerShowOrders));
+    }
+
+    @PostMapping("/updateUserBalance")
+    ResponseEntity<String> updateUserBalance(long id,double balance){
+        logger.info("编号为{}的管理员正在处理id为{}的用户的订单，导致余额{}{}元", TokenContext.getCurrentId(), id, balance > 0 ? "加" : "减", balance);
+        if(userService.updateBalance(id,balance)>0){
+            logger.info("编号为{}的管理员成功处理id为{}的用户的订单，导致余额{}{}元", TokenContext.getCurrentId(), id, balance > 0 ? "加" : "减", balance);
+            return ResponseEntity.status(200).body("处理成功，编号为"+id+"的用户余额"+(balance > 0 ? "加" : "减")+balance+"元");
+        }
+        else{
+            logger.info("编号为{}的管理员处理id为{}的用户的订单失败，余额不变", TokenContext.getCurrentId(), id);
+            return ResponseEntity.status(500).body("处理失败，编号为"+id+"的用户余额不变");
+        }
+    }
 }

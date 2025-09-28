@@ -30,8 +30,8 @@ public class BorrowTimeServiceImpl implements BorrowTimeService {
     @Override
     @Transactional
     @TransactionFail
-    public int updateBorrow(long id, long time) {
-        return borrowTimeMapper.updateBorrow(id, time);
+    public int updateBorrow(long id) {
+        return borrowTimeMapper.updateBorrow(id, searchBorrow(id)+1);
     }
 
     @Override

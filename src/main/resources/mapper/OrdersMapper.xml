@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.powernode.springboot.mapper.database.OrdersMapper">
+    <resultMap id="UserOrderResultMap" type="UserShowOrders">
+        <id property="id" column="id"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="money" column="money"/>
+        <result property="time" column="time" javaType="java.time.LocalDateTime"/>
+        <result property="purpose" column="purpose"/>
+        <result property="bookId" column="book_id"/>
+        <result property="name" column="name"/>
+        <result property="author" column="author"/>
+        <result property="back" column="back"/>
+    </resultMap>
+    <resultMap id="ManagerOrderResultMap" type="ManagerShowOrders">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="money" column="money"/>
+        <result property="time" column="time" javaType="java.time.LocalDateTime"/>
+        <result property="purpose" column="purpose"/>
+        <result property="bookId" column="book_id"/>
+        <result property="name" column="name"/>
+        <result property="author" column="author"/>
+        <result property="back" column="back"/>
+    </resultMap>
+    <insert id="insertOrders">
+        insert into orders(user_id,manager_id,money,back,purpose,time)
+            values (#{userId},#{managerId},#{money},false,#{purpose},#{time})
+    </insert>
+    <delete id="deleteOrders">
+        delete from orders where id=id
+    </delete>
+    <select id="getAllOrders" resultType="ManagerShowOrders">
+        select
+            a.id as id,
+            a.manager_id as manager_id,
+            a.money as money,
+            a.time as time,
+            a.purpose as purpose,
+            c.id as book_id,
+            b.name as name,
+            b.author as author,
+            a.back as back,
+            a.user_id as user_id
+        from
+            orders a
+            left join book c on a.id=c.order_id
+            left join books b on c.id=b.id
+    </select>
+    <select id="managerGetSomeoneOrders" resultType="ManagerShowOrders">
+        select
+        a.id as id,
+            a.manager_id as manager_id,
+            a.money as money,
+            a.time as time,
+            a.purpose as purpose,
+            c.id as book_id,
+            b.name as name,
+            b.author as author,
+            a.back as back,
+            a.user_id as user_id
+        from
+            orders a
+            left join book c on a.id=c.order_id
+            left join books b on c.id=b.id
+        where a.user_id=#{userId}
+    </select>
+    <select id="mangerGetOrdersByOrderId" resultType="ManagerShowOrders">
+        select
+        a.id as id,
+            a.manager_id as manager_id,
+            a.money as money,
+            a.time as time,
+            a.purpose as purpose,
+            c.id as book_id,
+            b.name as name,
+            b.author as author,
+            a.back as back,
+            a.user_id as user_id
+        from
+            orders a
+            left join book c on a.id=c.order_id
+            left join books b on c.id=b.id
+        where
+            a.user_id =#{id}
+    </select>
+    <select id="userGetAllOrders" resultType="UserShowOrders">
+        select
+            a.id as id,
+            a.manager_id as manager_id,
+            a.money as money,
+            a.time as time,
+            a.purpose as purpose,
+            c.id as book_id,
+            b.name as name,
+            b.author as author,
+            a.back as back
+        from
+            orders a
+            left join book c on a.id=c.order_id
+            left join books b on c.id=b.id
+        where
+           a.user_id =#{id}
+    </select>
+    <select id="userGetOrdersById" resultType="UserShowOrders">
+        select
+            a.id as id,
+            a.manager_id as manager_id,
+            a.money as money,
+            a.time as time,
+            a.purpose as purpose,
+            c.id as book_id,
+            b.name as name,
+            b.author as author,
+            a.back as back
+        from
+            orders a
+            left join book c on a.id=c.order_id
+            left join books b on c.id=b.id
+        where
+            a.id=#{id}
+    </select>
+</mapper>

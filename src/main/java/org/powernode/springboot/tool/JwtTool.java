@@ -28,7 +28,8 @@ import java.util.UUID;
 public final class JwtTool {
     //一个登录的身份jwt能维持多长时间,3小时
     private static final long time=1000*60*60*3;
-
+    //付款码维持时长
+    private static final long payTime=1000*60*3;
     private static final String signWith="l!ibrary@aaa,./?";
     private static final String signRandom ="c,s?.r58f";
 
@@ -56,8 +57,8 @@ public final class JwtTool {
         return res;
     }
 
-    //生成二维码的jwtToken
-    public static String getQR(long id, String role, LocalDateTime time,long QrTime){
+    //生成用于websocket连接的jwtToken
+    public static String getConnectQr(long id, String role, LocalDateTime time, long QrTime){
         String res=  Jwts.builder()
                 //类型
                 .setHeaderParam("typ","JWT")
@@ -80,7 +81,7 @@ public final class JwtTool {
     }
 
     //生成二维码的jwtToken
-    public static String getQR(long id, String role, LocalDateTime time,long QrTime,String device){
+    public static String getConnectQr(long id, String role, LocalDateTime time, long QrTime, String device){
         String res=  Jwts.builder()
                 //类型
                 .setHeaderParam("typ","JWT")
@@ -92,6 +93,30 @@ public final class JwtTool {
                 .claim("time",time.toInstant(ZoneOffset.UTC).toEpochMilli() )
                 //设置过期时间
                 .setExpiration(new Date(System.currentTimeMillis()+QrTime))
+                //设置唯一标识
+                .setId(UUID.randomUUID().toString())
+                //用户标识
+                .setSubject(String.valueOf(id))
+                //签名
+                .signWith(SignatureAlgorithm.HS256,signWith)
+                .compact();
+        System.out.println("Generated JWT: " + res);
+        return res;
+    }
+
+    //获取付款吗token
+    public static String getPayQr(long id,LocalDateTime time,double money){
+        String res=  Jwts.builder()
+                //类型
+                .setHeaderParam("typ","JWT")
+                //算法
+                .setHeaderParam("alg","HS256")
+                .claim("id",id)
+                .claim("role","user")
+                .claim("money",money)
+                .claim("time",time.toInstant(ZoneOffset.UTC).toEpochMilli() )
+                //设置过期时间
+                .setExpiration(new Date(System.currentTimeMillis()+payTime))
                 //设置唯一标识
                 .setId(UUID.randomUUID().toString())
                 //用户标识

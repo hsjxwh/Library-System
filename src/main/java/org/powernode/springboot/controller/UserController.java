@@ -1,17 +1,9 @@
 package org.powernode.springboot.controller;
 
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.bean.database.ProcessBook;
-import org.powernode.springboot.bean.vo.BooksStorage;
-import org.powernode.springboot.bean.vo.Chart;
-import org.powernode.springboot.bean.vo.ShowBook;
-import org.powernode.springboot.bean.vo.UserInfo;
-import org.powernode.springboot.service.database.service.BookService;
-import org.powernode.springboot.service.database.service.BooksService;
-import org.powernode.springboot.service.database.service.ProcessBookService;
-import org.powernode.springboot.service.database.service.UserService;
+import org.powernode.springboot.bean.vo.*;
+import org.powernode.springboot.service.database.service.*;
 import org.powernode.springboot.tool.JwtTool;
 import org.powernode.springboot.tool.TokenContext;
 import org.slf4j.Logger;
@@ -31,13 +23,15 @@ public class UserController {
     private final BooksService booksService;
     private final ProcessBookService processBookService;
     private final BookService bookService;
+    private final OrdersService ordersService;
     //一个用户认证二维码的有效时长
     private static final long QRTime=1000*60*3;
-    UserController(UserService userService, BooksService booksService, ProcessBookService processBookService, BookService bookService) {
+    UserController(UserService userService, BooksService booksService, ProcessBookService processBookService, BookService bookService, OrdersService ordersService) {
         this.userService = userService;
         this.booksService = booksService;
         this.processBookService = processBookService;
         this.bookService = bookService;
+        this.ordersService = ordersService;
     }
     //验证账号是否正确
     @PostMapping("/checkUserPassword")
@@ -71,31 +65,57 @@ public class UserController {
         long id=TokenContext.getCurrentId();
         logger.info("用户{}正在提交推荐书籍:{}的{}",id,author,name);
         ProcessBook processBook=new ProcessBook(name,author,id,description,type, LocalDateTime.now());
-        if(processBookService.insertRecord(processBook)>0)
+        if(processBookService.insertRecord(processBook)>0) {
+            logger.info("用户{}提交推荐书籍:{}的{}成功",id,author,name);
             return ResponseEntity.status(HttpStatus.OK).body("提交成功");
-        else
+        }
+        else {
+            logger.info("用户{}提交推荐书籍:{}的{}失败",id,author,name);
             return ResponseEntity.status(HttpStatus.valueOf(500)).body("传输失败，请联系管理员1074702558@qq.com");
+        }
     }
 
     @GetMapping("/getUseInfo")
     ResponseEntity<UserInfo> getUseInfo(){
-        return ResponseEntity.status(200).body(userService.getUserInfo(TokenContext.getCurrentId()));
+        long id=TokenContext.getCurrentId();
+        logger.info("编号为{}的用户请求获取他的信息",id);
+        return ResponseEntity.status(200).body(userService.getUserInfo(id));
     }
 
     @GetMapping("/generateQrToken")
     ResponseEntity<String> generateQrToken(){
         LocalDateTime time = LocalDateTime.now();
-        return ResponseEntity.status(200).body(JwtTool.getQR(TokenContext.getCurrentId(),"user",time,QRTime));
+        long id=TokenContext.getCurrentId();
+        logger.info("编号为{}的用户请求获取他的身份码",id);
+        return ResponseEntity.status(200).body(JwtTool.getConnectQr(id,"user",time,QRTime));
     }
 
     @GetMapping("/generateTestQrToken")
     ResponseEntity<String> generateQrToken(long id){
         LocalDateTime time = LocalDateTime.now();
-        return ResponseEntity.status(200).body(JwtTool.getQR(id,"user",time,QRTime));
+        logger.info("生成编号为{}的用户的测试省份码",id);
+        return ResponseEntity.status(200).body(JwtTool.getConnectQr(id,"user",time,QRTime));
     }
 
     @GetMapping("/getBookRecord")
     ResponseEntity<List<ShowBook>> getBookRecord(){
-        return ResponseEntity.status(200).body(bookService.selectSomeoneBook(TokenContext.getCurrentId()));
+        long id=TokenContext.getCurrentId();
+        logger.info("编号为{}的用户请求获取他的借阅记录",id);
+        return ResponseEntity.status(200).body(bookService.selectSomeoneBook(id));
+    }
+
+    @GetMapping("/getOrdersRecord")
+    ResponseEntity<List<UserShowOrders>> getOrdersRecord(){
+        long id=TokenContext.getCurrentId();
+        logger.info("编号为{}的用户请求获取他的订单列表",id);
+        return ResponseEntity.status(200).body(ordersService.userGetAllOrders(id));
+    }
+
+    //测试支付的程序
+    @GetMapping("/getPayQr")
+    ResponseEntity<String> getPayQrToken(long id,double money,String purpose){
+        LocalDateTime time = LocalDateTime.now();
+        logger.info("编号为{}的用户请求获取他的支付码，支付金额为{}元",id,money);
+        return ResponseEntity.status(200).body(JwtTool.getPayQr(id,time,money));
     }
 }

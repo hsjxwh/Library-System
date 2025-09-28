@@ -7,7 +7,9 @@ import java.util.List;
 
 public interface UserService {
     int insertUser(User user);
+    //更新基础信息
     int updateUser(User user);
+    int updateBalance(long id,double balance);
     int deleteUser(long id);
     boolean hasUser(long id);
     List<User> getUsers();

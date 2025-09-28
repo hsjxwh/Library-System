@@ -7,7 +7,7 @@ import java.util.List;
 public interface BorrowTimeService {
     int insertBorrow(long id);
     int deleteBorrow(long id);
-    int updateBorrow(long id,long time);
+    int updateBorrow(long id);
     long searchBorrow(long id);
     List<BorrowTime> searchBorrowTime(long id);
 }

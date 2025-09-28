@@ -6,6 +6,8 @@ import org.powernode.springboot.exception.InsufficientCreditError;
 import org.powernode.springboot.exception.RenewManyTimeError;
 import org.powernode.springboot.mapper.database.*;
 import org.powernode.springboot.service.database.service.BookService;
+import org.powernode.springboot.service.database.service.BorrowTimeService;
+import org.powernode.springboot.service.database.service.OrdersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,10 @@ public class BookServiceImpl implements BookService {
     private UserMapper userMapper;
     @Autowired
     private ScoreMapper scoreMapper;
+    @Autowired
+    private OrdersService ordersService;
+    @Autowired
+    private BorrowTimeService borrowTimeService;
     @Override
     @Transactional
     @TransactionFail
@@ -32,7 +38,17 @@ public class BookServiceImpl implements BookService {
         int res= booksMapper.updateState(bookId,"已借出");
         if(res<=0)
             return -1;
-        return userMapper.updateBorrow(userId,userMapper.getBorrow(userId));
+        int borrowTime=userMapper.getBorrow(userId);
+        int serviceType=userMapper.getServiceType(userId);
+        if(!(serviceType==1&&borrowTime<10)&&!(serviceType==2&&borrowTime<20)){
+
+
+        }
+        res=userMapper.updateBorrow(userId,borrowTime+1);
+        if(res<=0)
+            return -1;
+        else
+            return borrowTimeService.updateBorrow(bookId);
     }
 
     @Override
@@ -41,7 +57,11 @@ public class BookServiceImpl implements BookService {
     public int deleteBook(long id) {
         if(!hasThisBook(id))
             return 1;
-        return bookMapper.deleteBook(id);
+        int res=bookMapper.deleteBook(id);
+        if(bookMapper.hasOrders(id)>0){
+            res=ordersService.deleteOrders(bookMapper.getBookOrderId(id));
+        }
+        return res;
     }
 
     @Override
@@ -66,15 +86,19 @@ public class BookServiceImpl implements BookService {
         if (bookMapper.updateBook(id, returnTime, expectedReturnTime,deposit,managerId)<=0)
             return -1;
         //没有续借后的书籍应该归还日期，说明是还书
-        if(expectedReturnTime==null)
-            return booksMapper.updateState(bookId,"在馆");
+        if(expectedReturnTime==null){
+            int res= booksMapper.updateState(bookId,"在馆");
+            if(deposit>0.00){
+                res=ordersService.insertOrders(userId,managerId,deposit,-1,"逾期还书，扣除押金",returnTime);
+            }
+            return res;
+        }
         //否则就是续借
         else{
             checkBorrowLegal(userId);
             checkRenewLegal(userId);
             return bookMapper.updateReturnTime(id,bookMapper.getRenewTime(id)+1);
         }
-
     }
 
     @Override
@@ -102,10 +126,24 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional
     public List<ShowBook> selectAllBook(String name, String author, long id) {
         return bookMapper.selectAllBookRecord(name, author, id);
     }
 
+    @Override
+    @Transactional
+    public boolean hasOrder(long id) {
+        return bookMapper.hasOrders(id)>0;
+    }
+
+    @Override
+    @Transactional
+    public long getBookOrderId(long id) {
+        return bookMapper.getBookOrderId(id);
+    }
+
+    @Transactional
     void checkBorrowLegal(long userId){
         int score=scoreMapper.selectScore(userId);
         if(score<60)
@@ -115,6 +153,7 @@ public class BookServiceImpl implements BookService {
             throw new BalanceNotEnoughError("用户0"+userId+"余额不足20，请充值后继续进行服务，当前余额:"+balance);
     }
 
+    @Transactional
     void checkRenewLegal(long id){
         int renewTime=bookMapper.getRenewTime(id);
         if(renewTime>=2)

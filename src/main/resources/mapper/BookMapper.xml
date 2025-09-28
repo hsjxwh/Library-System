@@ -14,7 +14,8 @@
         <result property="deposit" column="deposit"/>
         <result property="name" column="name"/>
         <result property="author" column="author"/>
-        <result property="renewTime" column="renew_time"></result>
+        <result property="renewTime" column="renew_time"/>
+        <result property="orderId" column="order_id"/>
     </resultMap>
     <insert id="insertBook" useGeneratedKeys="true" keyProperty="id">
         insert into book(book_id,user_id,manager_id1,time,expected_return_time,id,restitution,renew_time)
@@ -51,10 +52,12 @@
             a.deposit as deposit,
             b.name as name,
             b.author as author,
-            a.renew_time as renew_time
+            a.renew_time as renew_time,
+            c.id as order_id
         from
             book a
-            left join books b on a.book_id=b.id
+        left join books b on a.book_id=b.id
+        left join orders c on a.order_id=c.id
     </select>
     <select id="selectSomeoneBook" resultMap="BookResultMap">
         select
@@ -70,10 +73,12 @@
             a.deposit as deposit,
             b.name as name,
             b.author as author,
-            a.renew_time as renew_time
+            a.renew_time as renew_time,
+            c.id as order_id
         from
             book a
             left join books b on a.book_id=b.id
+            left join orders c on a.order_id=c.id
         where user_id=#{id}
     </select>
     <select id="getBooksBookNum" resultType="java.lang.Long">
@@ -99,10 +104,12 @@
             a.deposit as deposit,
             b.name as name,
             b.author as author,
-            a.renew_time as renew_time
+            a.renew_time as renew_time,
+            c.id as order_id
         from
             book a
         left join books b on a.book_id=b.id
+        left join orders c on a.order_id=c.id
         <where>
             <if test="id!=-1">
                 a.book_id=#{id}
@@ -117,5 +124,11 @@
     </select>
     <select id="getRenewTime" resultType="java.lang.Integer">
         select renew_time from book where id=#{id}
+    </select>
+    <select id="hasOrders" resultType="java.lang.Integer">
+        select count(*) from book where order_id is not null and id=#{id}
+    </select>
+    <select id="getBookOrderId" resultType="java.lang.Long">
+        select order_id from book where id=#{id}
     </select>
 </mapper>

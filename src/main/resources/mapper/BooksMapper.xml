@@ -31,10 +31,10 @@
         select * from books
         <where>
             <if test="name !=null and name !=''">
-                and name like concat('%',#{name},'%')
+                and REPLACE(name,'·','') like concat('%',REPLACE(#{name},'·',''),'%')
             </if>
             <if test="author!=null and author !=''">
-                and author=#{author}
+                and REPLACE(author,'·','') like REPLACE(#{author},'·','')
             </if>
             <if test="type!=null and type !=''">
                 and type like concat('%',#{type},'%')

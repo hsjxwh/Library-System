@@ -12,6 +12,10 @@ public class Message {
     String message;
     //自定义的状态码，前端可根据这个状态码得知当前消息的状态
     int status;
+    int serviceType;
+    String purpose;
+    String payType;
+    double recharge;
 
     public Message(long id, int status) {
         this.id = String.valueOf(id);
