@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 
 public final class DealWithRequestTool {
     public static void checkFrequency(HttpServletRequest request, LoginTokenService loginTokenService,Logger logger,long id,String role){
-        //获取直接的真实ip
+        //获取直接的真实ip。
         String ip=request.getRemoteAddr();
 
     }
