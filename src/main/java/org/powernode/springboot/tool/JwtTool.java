@@ -5,8 +5,10 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.exception.HaveNotAdminAuthority;
+import org.powernode.springboot.exception.IllegalLoginTokenError;
 import org.powernode.springboot.exception.NotLoggedInException;
 import org.powernode.springboot.exception.WrongCsrfError;
+import org.powernode.springboot.service.database.service.redis.LoginTokenService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,9 +34,11 @@ public final class JwtTool {
     private static final long payTime=1000*60*3;
     private static final String signWith="l!ibrary@aaa,./?";
     private static final String signRandom ="c,s?.r58f";
+    //存储用户登录token是，对账号信息键进行加密的key
+    private static final String signInRedis="da.'f.f";
 
     //生成验证请求身份的jwtToken
-    public static String getJwt(long id,String role,String csrfToken){
+    public static String getJwt(long id,String role,String csrfToken,long currentTime){
         String randomTokenHash=hmacSha256(csrfToken);
         String res=  Jwts.builder()
                 //类型
@@ -44,8 +48,9 @@ public final class JwtTool {
                 .claim("id",id)
                 .claim("role",role)
                 .claim("csrfToken",randomTokenHash)
+                .claim("time",currentTime)
                 //设置过期时间
-                .setExpiration(new Date(System.currentTimeMillis()+time))
+                .setExpiration(new Date(currentTime+time))
                 //设置唯一标识
                 .setId(UUID.randomUUID().toString())
                 //用户标识
@@ -128,10 +133,10 @@ public final class JwtTool {
         return res;
     }
 
-    //设置前端的cookie
-    public static void setCookie(HttpServletResponse response,Long id, String role){
+    //设置前端的cookie,并把生成的登录token返回
+    public static void setCookie(HttpServletResponse response,Long id, String role,long currentTime){
         String csrfToken = UUID.randomUUID().toString();
-        String jwt=getJwt(id,role,csrfToken);
+        String jwt=getJwt(id,role,csrfToken,currentTime);
         //将jwt添加到httponly cookie
         response.addHeader("Set-Cookie",
                 "jwtToken=" + jwt +
@@ -166,8 +171,8 @@ public final class JwtTool {
         return Long.parseLong(claims.get("id").toString());
     }
 
-    //在cookie中找到jwt并进行检查
-    public static void findJwt(HttpServletRequest request,Cookie[] cookies,String wantRole){
+    //在cookie中找到jwt并进行检查,返回角色
+    public static String findJwt(HttpServletRequest request, Cookie[] cookies, String wantRole, LoginTokenService loginTokenService){
         if(cookies==null)
             throw new NotLoggedInException("未登录，请登录后进行操作");
         String jwt=null;
@@ -186,6 +191,13 @@ public final class JwtTool {
         //获取用户的信息
         String role=claims.get("role").toString();
         long id=Long.parseLong(claims.get("id").toString());
+        long getTime=Long.parseLong(claims.get("time").toString());
+        String key=hashLoginInfo(role,id);
+        long startValidTime=loginTokenService.getTokenStartValidTime(key);
+        //token的创建时间必须再指定的有效时间之后
+        if(getTime<startValidTime){
+            throw new IllegalLoginTokenError("当前登录已经失效");
+        }
         //设置权限
         JwtTool.setAuthentication(id,role);
         checkCsrf(request,claims);
@@ -194,6 +206,7 @@ public final class JwtTool {
             if(!role.equals("manager"))
                 throw new HaveNotAdminAuthority("没有管理员权限");
         }
+        return role;
     }
 
 
@@ -224,6 +237,20 @@ public final class JwtTool {
             SecretKeySpec secretKeySpec=new SecretKeySpec(signRandom.getBytes(StandardCharsets.UTF_8),"HmacSHA256");
             hmac.init(secretKeySpec);
             byte[] hash=hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //对一给角色的身份和id进行获取哈希值
+    public static String hashLoginInfo(String role,long id){
+        try {
+            Mac hmac=Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec=new SecretKeySpec(signInRedis.getBytes(StandardCharsets.UTF_8),"HmacSHA256");
+            hmac.init(secretKeySpec);
+            String combine=role+"|"+id;
+            byte[] hash=hmac.doFinal(combine.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e);

@@ -24,7 +24,7 @@
         <result property="author" column="author"/>
         <result property="back" column="back"/>
     </resultMap>
-    <insert id="insertOrders">
+    <insert id="insertOrders" useGeneratedKeys="true" keyProperty="id">
         insert into orders(user_id,manager_id,money,back,purpose,time)
             values (#{userId},#{managerId},#{money},false,#{purpose},#{time})
     </insert>
@@ -38,7 +38,7 @@
             a.money as money,
             a.time as time,
             a.purpose as purpose,
-            c.id as book_id,
+            b.id as book_id,
             b.name as name,
             b.author as author,
             a.back as back,
@@ -46,7 +46,7 @@
         from
             orders a
             left join book c on a.id=c.order_id
-            left join books b on c.id=b.id
+            left join books b on c.book_id=b.id
     </select>
     <select id="managerGetSomeoneOrders" resultType="ManagerShowOrders">
         select
@@ -55,7 +55,7 @@
             a.money as money,
             a.time as time,
             a.purpose as purpose,
-            c.id as book_id,
+            b.id as book_id,
             b.name as name,
             b.author as author,
             a.back as back,
@@ -63,7 +63,7 @@
         from
             orders a
             left join book c on a.id=c.order_id
-            left join books b on c.id=b.id
+            left join books b on c.book_id=b.id
         where a.user_id=#{userId}
     </select>
     <select id="mangerGetOrdersByOrderId" resultType="ManagerShowOrders">
@@ -73,7 +73,7 @@
             a.money as money,
             a.time as time,
             a.purpose as purpose,
-            c.id as book_id,
+            b.id as book_id,
             b.name as name,
             b.author as author,
             a.back as back,
@@ -81,9 +81,9 @@
         from
             orders a
             left join book c on a.id=c.order_id
-            left join books b on c.id=b.id
+            left join books b on c.book_id=b.id
         where
-            a.user_id =#{id}
+            a.id =#{id}
     </select>
     <select id="userGetAllOrders" resultType="UserShowOrders">
         select
@@ -92,14 +92,14 @@
             a.money as money,
             a.time as time,
             a.purpose as purpose,
-            c.id as book_id,
+            b.id as book_id,
             b.name as name,
             b.author as author,
             a.back as back
         from
             orders a
             left join book c on a.id=c.order_id
-            left join books b on c.id=b.id
+            left join books b on c.book_id=b.id
         where
            a.user_id =#{id}
     </select>
@@ -110,14 +110,14 @@
             a.money as money,
             a.time as time,
             a.purpose as purpose,
-            c.id as book_id,
+            b.id as book_id,
             b.name as name,
             b.author as author,
             a.back as back
         from
             orders a
             left join book c on a.id=c.order_id
-            left join books b on c.id=b.id
+            left join books b on c.book_id=b.id
         where
             a.id=#{id}
     </select>

@@ -3,7 +3,8 @@ package org.powernode.springboot.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.bean.database.ProcessBook;
 import org.powernode.springboot.bean.vo.*;
-import org.powernode.springboot.service.database.service.*;
+import org.powernode.springboot.service.database.service.mysql.*;
+import org.powernode.springboot.service.database.service.redis.LoginTokenService;
 import org.powernode.springboot.tool.JwtTool;
 import org.powernode.springboot.tool.TokenContext;
 import org.slf4j.Logger;
@@ -24,21 +25,24 @@ public class UserController {
     private final ProcessBookService processBookService;
     private final BookService bookService;
     private final OrdersService ordersService;
+    private final LoginTokenService loginTokenService;
     //一个用户认证二维码的有效时长
     private static final long QRTime=1000*60*3;
-    UserController(UserService userService, BooksService booksService, ProcessBookService processBookService, BookService bookService, OrdersService ordersService) {
+    UserController(UserService userService, BooksService booksService, ProcessBookService processBookService, BookService bookService, OrdersService ordersService, LoginTokenService loginTokenService) {
         this.userService = userService;
         this.booksService = booksService;
         this.processBookService = processBookService;
         this.bookService = bookService;
         this.ordersService = ordersService;
+        this.loginTokenService = loginTokenService;
     }
     //验证账号是否正确
     @PostMapping("/checkUserPassword")
     ResponseEntity<?> checkPassword(@RequestParam long id, @RequestParam String password, HttpServletResponse response){
         logger.info("用户{}正在登录中。。", id);
+        long currentTime=System.currentTimeMillis();
         if(userService.checkPassword(id,password)){
-            JwtTool.setCookie(response,id,"user");
+            JwtTool.setCookie(response,id,"user",currentTime);
             logger.info("用户{}登录成功", id);
             return ResponseEntity.status(200).body("登录成功");
         }

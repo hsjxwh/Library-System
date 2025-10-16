@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrdersMapper {
-    int insertOrders(@Param("userId") long userId, @Param("managerId") long managerId, @Param("money") double money, @Param("purpose" ) String purpose, @Param("time") LocalDateTime time);
+    int insertOrders(Orders order);
     int deleteOrders(long id);
     List<ManagerShowOrders> getAllOrders();
     List<ManagerShowOrders> managerGetSomeoneOrders(long userId);

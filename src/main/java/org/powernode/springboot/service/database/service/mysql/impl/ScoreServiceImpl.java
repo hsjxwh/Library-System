@@ -1,9 +1,9 @@
-package org.powernode.springboot.service.database.service.impl;
+package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
 import org.powernode.springboot.bean.database.Score;
 import org.powernode.springboot.mapper.database.ScoreMapper;
-import org.powernode.springboot.service.database.service.ScoreService;
+import org.powernode.springboot.service.database.service.mysql.ScoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

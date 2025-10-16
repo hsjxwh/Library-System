@@ -1,6 +1,5 @@
-package org.powernode.springboot.service.database.service;
+package org.powernode.springboot.service.database.service.mysql;
 
-import org.apache.ibatis.annotations.Param;
 import org.powernode.springboot.bean.database.Score;
 
 import java.util.List;

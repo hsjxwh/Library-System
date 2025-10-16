@@ -3,8 +3,8 @@ package org.powernode.springboot.websocket.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
-import org.powernode.springboot.service.database.service.OrdersService;
-import org.powernode.springboot.service.database.service.UserService;
+import org.powernode.springboot.service.database.service.mysql.OrdersService;
+import org.powernode.springboot.service.database.service.mysql.UserService;
 import org.powernode.springboot.tool.JwtTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -219,7 +219,7 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
             LocalDateTime time=LocalDateTime.now();
             double balance=getMessage.getRecharge();
             logger.info("编号为{}的管理员正在处理来自编号为{}用户的目的为充值，金额大小为{}的订单",id,userId,balance);
-            if(ordersService.insertOrders(userId,id,balance,3,purpose,time)>0){
+            if(ordersService.insertOrders(userId,id,balance,3,purpose,time,-1)>0){
                 logger.info("编号为{}的管理员正在处理编号为{}用户的目的为充值，金额大小为{}的订单成功",id,userId,balance);
                 sendMessage(sessions.get(id).get("pc"),id,device,new Message("充值成功,用户编码为"+userId+"金额为"+balance+"元",MessageType.RECHARGE_CODE.getCode()));
             }
@@ -248,7 +248,7 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
                 logger.info("编号为{}的管理员在处理来自编号为{}用户的目的为{}，金额大小为{}的订单时，发现其开通服务的类型存在异常",id,userId,purpose,money);
                 return;
             }
-            if(ordersService.insertOrders(userId,id,money,serviceType,purpose,time)>0) {
+            if(ordersService.insertOrders(userId,id,money,serviceType,purpose,time,-1)>0) {
                 logger.info("编号为{}的管理员处理来自编号为{}用户的目的为{}，金额大小为{}的订单成功",id,userId,purpose,money);
                 sendMessage(sessions.get(id).get("pc"),id,device,new Message("订单创建成功，用户编码为"+userId+"金额为"+money+"元",MessageType.PAY_CODE.getCode()));
             }

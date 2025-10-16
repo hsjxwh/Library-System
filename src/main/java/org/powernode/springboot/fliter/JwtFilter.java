@@ -10,8 +10,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.exception.AuthorityError;
 import org.powernode.springboot.exception.NotLoggedInException;
 import org.powernode.springboot.fliter.treatError.TreatError;
+import org.powernode.springboot.service.database.service.redis.LoginTokenService;
+import org.powernode.springboot.tool.DealWithRequestTool;
 import org.powernode.springboot.tool.JwtTool;
 import org.powernode.springboot.tool.TokenContext;
+import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -27,6 +31,12 @@ public class JwtFilter extends OncePerRequestFilter {
     @Value("${websocket.path}")
     String websocketPath;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
+    private final LoginTokenService loginTokenService;
+    private final Logger logger;
+    public JwtFilter(LoginTokenService loginTokenService, Logger logger) {
+        this.loginTokenService = loginTokenService;
+        this.logger = logger;
+    }
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String url= request.getServletPath();
@@ -34,14 +44,15 @@ public class JwtFilter extends OncePerRequestFilter {
         for(String excludedPath : excludedPaths) {
             if(antPathMatcher.match(excludedPath, url)) {
                 System.out.println("命中白名单，直接放行：" + excludedPath);
-                doFilter(request, response, filterChain);
+                filterChain.doFilter(request, response);
                 return;
             }
         }
         try {
             Cookie[] cookies = request.getCookies();
-            JwtTool.findJwt(request,cookies,null);
-            doFilter(request, response, filterChain);
+            String role=JwtTool.findJwt(request,cookies,null,loginTokenService);
+            DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),role);
+            filterChain.doFilter(request, response);
         }
         //由于全局处理异常值处理控制器的异常，因此需要额外写
         catch (ExpiredJwtException e) {

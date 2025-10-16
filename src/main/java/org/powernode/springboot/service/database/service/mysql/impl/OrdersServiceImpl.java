@@ -1,13 +1,15 @@
-package org.powernode.springboot.service.database.service.impl;
+package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
 import org.powernode.springboot.bean.database.Orders;
 import org.powernode.springboot.bean.vo.ManagerShowOrders;
 import org.powernode.springboot.bean.vo.UserShowOrders;
+import org.powernode.springboot.mapper.database.BookMapper;
 import org.powernode.springboot.mapper.database.OrdersMapper;
 import org.powernode.springboot.mapper.database.UserMapper;
-import org.powernode.springboot.service.database.service.OrdersService;
-import org.powernode.springboot.service.database.service.UserService;
+import org.powernode.springboot.service.database.service.mysql.BookService;
+import org.powernode.springboot.service.database.service.mysql.OrdersService;
+import org.powernode.springboot.service.database.service.mysql.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +24,13 @@ public class OrdersServiceImpl implements OrdersService {
     private UserMapper userMapper;
     @Autowired
     private UserService userService;
+    private BookMapper bookMapper;
     @Override
     @Transactional
     @TransactionFail
-    public int insertOrders(long userId, long managerId, double money, int serviceType, String purpose, LocalDateTime time) {
-        int res= ordersMapper.insertOrders(userId, managerId, money,purpose,time);
+    public int insertOrders(long userId, long managerId, double money, int serviceType, String purpose, LocalDateTime time,long id) {
+        Orders orders = new Orders(userId,managerId,managerId,purpose,time);
+        int res= ordersMapper.insertOrders(orders);
         if(res<0){
             return -1;
         }
@@ -36,6 +40,10 @@ public class OrdersServiceImpl implements OrdersService {
         }
         if(serviceType==1||serviceType==2){
             res= userMapper.updateServiceType(userId,serviceType);
+        }
+        //有关联的借书记录的话,要将信息补入借阅表
+        if(id>0&&res>0){
+            res=bookMapper.setBookOrderId(id,orders.getId());
         }
         return res;
     }

@@ -1,11 +1,11 @@
-package org.powernode.springboot.service.database.service.impl;
+package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
 import org.powernode.springboot.bean.database.User;
 import org.powernode.springboot.bean.vo.UserInfo;
 import org.powernode.springboot.mapper.database.ScoreMapper;
 import org.powernode.springboot.mapper.database.UserMapper;
-import org.powernode.springboot.service.database.service.UserService;
+import org.powernode.springboot.service.database.service.mysql.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -32,6 +32,7 @@ public class GlobalErrorResponse {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getErrorType());
     }
 
+    //未登录异常
     @ExceptionHandler(NotLoggedInException.class)
     @ResponseBody
     public ResponseEntity<String> handleWithIllegalArgumentException(){
@@ -93,4 +94,9 @@ public class GlobalErrorResponse {
         return ResponseEntity.status(403).body(e.getMessage());
     }
 
+    @ExceptionHandler(IllegalLoginTokenError.class)
+    @ResponseBody
+    public ResponseEntity<String> handleWithIllegalLoginTokenError(Exception e) {
+        return ResponseEntity.status(401).body(e.getMessage());
+    }
 }

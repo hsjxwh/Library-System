@@ -1,4 +1,4 @@
-package org.powernode.springboot.service.database.service;
+package org.powernode.springboot.service.database.service.mysql;
 
 import org.powernode.springboot.bean.database.BorrowTime;
 

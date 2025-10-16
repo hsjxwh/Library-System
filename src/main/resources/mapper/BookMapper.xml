@@ -17,7 +17,7 @@
         <result property="renewTime" column="renew_time"/>
         <result property="orderId" column="order_id"/>
     </resultMap>
-    <insert id="insertBook" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertBook">
         insert into book(book_id,user_id,manager_id1,time,expected_return_time,id,restitution,renew_time)
             values (#{bookId},#{userId},#{managerId1},#{time},#{expectedReturnTime},null,false,0)
     </insert>
@@ -31,6 +31,9 @@
     </update>
     <update id="updateReturnTime">
         update book set renew_time=#{renewTime} where id=#{id}
+    </update>
+    <update id="setBookOrderId">
+        update book set order_id=#{orderId} where id=#{id}
     </update>
     <delete id="deleteBook">
         delete from book where id=#{id}
@@ -79,7 +82,7 @@
             book a
             left join books b on a.book_id=b.id
             left join orders c on a.order_id=c.id
-        where user_id=#{id}
+        where a.user_id=#{id}
     </select>
     <select id="getBooksBookNum" resultType="java.lang.Long">
         select count(*) from book where book_id=#{bookId}

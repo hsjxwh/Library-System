@@ -1,6 +1,5 @@
 package org.powernode.springboot.controller;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.bean.database.Books;
@@ -10,12 +9,10 @@ import org.powernode.springboot.bean.vo.ImportBooksByExcelRes;
 import org.powernode.springboot.bean.vo.ManagerShowOrders;
 import org.powernode.springboot.bean.vo.RenewMessage;
 import org.powernode.springboot.bean.vo.ShowBook;
-import org.powernode.springboot.service.database.service.*;
+import org.powernode.springboot.service.database.service.mysql.*;
+import org.powernode.springboot.service.database.service.redis.LoginTokenService;
 import org.powernode.springboot.service.excel.BooksExcelService;
-import org.powernode.springboot.tool.FileTool;
-import org.powernode.springboot.tool.JwtTool;
-import org.powernode.springboot.tool.TimeTool;
-import org.powernode.springboot.tool.TokenContext;
+import org.powernode.springboot.tool.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -42,14 +39,15 @@ public class ManagerController {
     private final BooksService booksService;
     private final ProcessBookService processBookService;
     private final PurchaseBooksService purchaseBooksService;
-    private final BookService  bookService;
+    private final BookService bookService;
     private final ScoreService scoreService;
     private final OrdersService ordersService;
     //一此jwtToken的有效时长
     private final long websocketConnectToken=1000*60*8;
     private final UserService userService;
+    private final LoginTokenService loginTokenService;
 
-    ManagerController(ManagerService managerService, BooksExcelService booksExcelService, BooksService booksService, ProcessBookService processBookService, PurchaseBooksService purchaseBooksService, BookService bookService, ScoreService scoreService, OrdersService ordersService, UserService userService) {
+    ManagerController(ManagerService managerService, BooksExcelService booksExcelService, BooksService booksService, ProcessBookService processBookService, PurchaseBooksService purchaseBooksService, BookService bookService, ScoreService scoreService, OrdersService ordersService, UserService userService, LoginTokenService loginTokenService) {
         this.managerService = managerService;
         this.booksExcelService = booksExcelService;
         this.booksService = booksService;
@@ -59,13 +57,16 @@ public class ManagerController {
         this.scoreService = scoreService;
         this.ordersService = ordersService;
         this.userService = userService;
+        this.loginTokenService = loginTokenService;
+
     }
 
     @PostMapping("/checkManagerPassword")
     ResponseEntity<?> checkPassword(@RequestParam long id, @RequestParam String password, HttpServletResponse response) {
         logger.info("管理员{}正在登录中",id);
+        long currentTime=System.currentTimeMillis();
         if(managerService.checkPassword(id,password)){
-            JwtTool.setCookie(response,id,"manager");
+            JwtTool.setCookie(response,id,"manager",currentTime);
             logger.info("管理员{}登录成功",id);
             return ResponseEntity.status(200).body("登录成功");
         }
@@ -76,7 +77,8 @@ public class ManagerController {
     @PostMapping("/checkIsManager")
     ResponseEntity<String> checkIsManager(HttpServletRequest request, HttpServletResponse response) {
         logger.info("正在验证是否有管理员{}的权限", TokenContext.getCurrentId());
-        JwtTool.findJwt(request,request.getCookies(),"manager");
+        JwtTool.findJwt(request,request.getCookies(),"manager",loginTokenService);
+        DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),"manager");
         return ResponseEntity.status(200).body("拥有权限");
     }
 
@@ -262,7 +264,7 @@ public class ManagerController {
         LocalDateTime now=LocalDateTime.now();
         if(TimeTool.needDeductDeposit(expectedReturnTime,now)){
             int betweenDays=TimeTool.daysBetween(now,expectedReturnTime);
-            refund=betweenDays*1*(1+0.01*betweenDays);
+            refund=-betweenDays*1*(1+0.01*betweenDays);
         }
         else
             refund=0.0;

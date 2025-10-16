@@ -1,13 +1,14 @@
-package org.powernode.springboot.service.database.service.impl;
+package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
 import org.powernode.springboot.bean.vo.ShowBook;
 import org.powernode.springboot.exception.InsufficientCreditError;
 import org.powernode.springboot.exception.RenewManyTimeError;
 import org.powernode.springboot.mapper.database.*;
-import org.powernode.springboot.service.database.service.BookService;
-import org.powernode.springboot.service.database.service.BorrowTimeService;
-import org.powernode.springboot.service.database.service.OrdersService;
+import org.powernode.springboot.service.database.service.mysql.BookService;
+import org.powernode.springboot.service.database.service.mysql.BorrowTimeService;
+import org.powernode.springboot.service.database.service.mysql.OrdersService;
+import org.powernode.springboot.service.database.service.mysql.ScoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,8 @@ public class BookServiceImpl implements BookService {
     private OrdersService ordersService;
     @Autowired
     private BorrowTimeService borrowTimeService;
+    @Autowired
+    private ScoreService scoreService;
     @Override
     @Transactional
     @TransactionFail
@@ -41,8 +44,7 @@ public class BookServiceImpl implements BookService {
         int borrowTime=userMapper.getBorrow(userId);
         int serviceType=userMapper.getServiceType(userId);
         if(!(serviceType==1&&borrowTime<10)&&!(serviceType==2&&borrowTime<20)){
-
-
+            return -1;
         }
         res=userMapper.updateBorrow(userId,borrowTime+1);
         if(res<=0)
@@ -86,10 +88,15 @@ public class BookServiceImpl implements BookService {
         if (bookMapper.updateBook(id, returnTime, expectedReturnTime,deposit,managerId)<=0)
             return -1;
         //没有续借后的书籍应该归还日期，说明是还书
+        int res=1;
         if(expectedReturnTime==null){
-            int res= booksMapper.updateState(bookId,"在馆");
-            if(deposit>0.00){
-                res=ordersService.insertOrders(userId,managerId,deposit,-1,"逾期还书，扣除押金",returnTime);
+            res= booksMapper.updateState(bookId,"在馆");
+            if(res>0&&deposit>0.00){
+                res=ordersService.insertOrders(userId,managerId,deposit,-1,"逾期还书，扣除押金",returnTime,id);
+                if(res>0){
+                    int score=(int)(deposit*0.5);
+                    res=scoreService.updateScore(userId,-score);
+                }
             }
             return res;
         }
@@ -97,6 +104,15 @@ public class BookServiceImpl implements BookService {
         else{
             checkBorrowLegal(userId);
             checkRenewLegal(userId);
+            if(deposit>0.00){
+                res=ordersService.insertOrders(userId,managerId,deposit,-1,"逾期还书，扣除押金",LocalDateTime.now(),id);
+                if(res>0){
+                    int score=(int)(deposit*0.5);
+                    res=scoreService.updateScore(userId,-score);
+                }
+            }
+            if(res<=0)
+                return res;
             return bookMapper.updateReturnTime(id,bookMapper.getRenewTime(id)+1);
         }
     }

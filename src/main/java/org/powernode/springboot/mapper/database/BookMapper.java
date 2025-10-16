@@ -18,7 +18,7 @@ public interface BookMapper {
     List<ShowBook> selectAllBookRecord(@Param("name") String name,@Param("author") String author,@Param("id") long id);
     int getRenewTime(@Param("id") long id);
     //增加借阅记录
-    int insertBook(@Param("bookId") long bookId,@Param("useId") long userId,@Param("managerId1") long managerId1,@Param("time")LocalDateTime time,@Param("expectedReturnTime") LocalDateTime expectedReturnTime);
+    int insertBook(@Param("bookId") long bookId,@Param("userId") long userId,@Param("managerId1") long managerId1,@Param("time")LocalDateTime time,@Param("expectedReturnTime") LocalDateTime expectedReturnTime);
     //删除借阅记录
     int deleteBook(long id);
     //记录借阅记录的归还日期和退回押金
@@ -28,4 +28,5 @@ public interface BookMapper {
     long getBooksBookNum(long bookId);
     int hasOrders(long id);
     long getBookOrderId(long id);
+    int setBookOrderId(@Param("id") long id, @Param("orderId") long orderId);
 }
