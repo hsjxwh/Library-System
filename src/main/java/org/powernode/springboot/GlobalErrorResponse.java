@@ -99,4 +99,10 @@ public class GlobalErrorResponse {
     public ResponseEntity<String> handleWithIllegalLoginTokenError(Exception e) {
         return ResponseEntity.status(401).body(e.getMessage());
     }
+
+    @ExceptionHandler(RequestTooMuchTime.class)
+    @ResponseBody
+    public ResponseEntity<String> handleWithRequestTooMuchTime(Exception e) {
+        return ResponseEntity.status(429).body(e.getMessage());
+    }
 }

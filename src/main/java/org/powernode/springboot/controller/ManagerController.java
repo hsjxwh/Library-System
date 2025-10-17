@@ -3,12 +3,14 @@ package org.powernode.springboot.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.bean.database.Books;
+import org.powernode.springboot.bean.database.OnlineAccount;
 import org.powernode.springboot.bean.database.ProcessBook;
 import org.powernode.springboot.bean.database.PurchaseBooks;
 import org.powernode.springboot.bean.vo.ImportBooksByExcelRes;
 import org.powernode.springboot.bean.vo.ManagerShowOrders;
 import org.powernode.springboot.bean.vo.RenewMessage;
 import org.powernode.springboot.bean.vo.ShowBook;
+import org.powernode.springboot.exception.RequestTooMuchTime;
 import org.powernode.springboot.service.database.service.mysql.*;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
 import org.powernode.springboot.service.excel.BooksExcelService;
@@ -67,6 +69,8 @@ public class ManagerController {
         long currentTime=System.currentTimeMillis();
         if(managerService.checkPassword(id,password)){
             JwtTool.setCookie(response,id,"manager",currentTime);
+            logger.info("将管理员{}假如张倩网站在线用户人数列表",id);
+            loginTokenService.addOnlineCount("manager",id,currentTime);
             logger.info("管理员{}登录成功",id);
             return ResponseEntity.status(200).body("登录成功");
         }
@@ -78,8 +82,10 @@ public class ManagerController {
     ResponseEntity<String> checkIsManager(HttpServletRequest request, HttpServletResponse response) {
         logger.info("正在验证是否有管理员{}的权限", TokenContext.getCurrentId());
         JwtTool.findJwt(request,request.getCookies(),"manager",loginTokenService);
-        DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),"manager");
-        return ResponseEntity.status(200).body("拥有权限");
+        if(DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),"manager",System.currentTimeMillis()))
+            return ResponseEntity.status(200).body("拥有权限");
+        else
+            throw new RequestTooMuchTime("当前账号访问频率过快");
     }
 
     //讲管理员上传的excel表格导入到数据库中
@@ -310,5 +316,13 @@ public class ManagerController {
             logger.info("编号为{}的管理员处理id为{}的用户的订单失败，余额不变", TokenContext.getCurrentId(), id);
             return ResponseEntity.status(500).body("处理失败，编号为"+id+"的用户余额不变");
         }
+    }
+
+    @GetMapping("/getAllOnlineAccounts")
+    ResponseEntity<List<OnlineAccount>> getAllOnlineAccount(){
+        long currentTime=System.currentTimeMillis();
+        logger.info("编号为{}的管理员正在获取当前网站所有在线账号",TokenContext.getCurrentId());
+        List<OnlineAccount> accounts=loginTokenService.getAllOnlineAccount(currentTime);
+        return ResponseEntity.status(200).body(accounts);
     }
 }

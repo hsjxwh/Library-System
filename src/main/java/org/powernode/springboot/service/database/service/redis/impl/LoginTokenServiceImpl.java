@@ -1,16 +1,28 @@
 package org.powernode.springboot.service.database.service.redis.impl;
 
 import org.powernode.springboot.bean.database.LoginToken;
+import org.powernode.springboot.bean.database.OnlineAccount;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
+import org.powernode.springboot.tool.JwtTool;
+import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class LoginTokenServiceImpl implements LoginTokenService {
     private final RedisTemplate<String, Object> redisTemplate;
+    //在线时长
+    private final long onlineTime=1000*60*60*3;
+    private final String onlineAccountKey="onlineAccount";
+    //一个请求最多的存放时间
+    private final long requestTime=1000*60;
 
     LoginTokenServiceImpl(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -27,5 +39,68 @@ public class LoginTokenServiceImpl implements LoginTokenService {
         if(time==null)
             time=-1L;
         return time;
+    }
+
+    @Override
+    public void addOnlineCount(String role, long id, long time) {
+        ZSetOperations<String,Object> zSetOperations=redisTemplate.opsForZSet();
+        String value=role+" "+id;
+        zSetOperations.add(onlineAccountKey,value,time+onlineTime);
+    }
+
+    @Override
+    public void addIpRequest(String ip,String role, long time) {
+        ZSetOperations<String,Object> zSetOperations=redisTemplate.opsForZSet();
+        zSetOperations.add("ip:"+ip,role+" "+ UUID.randomUUID(),time);
+    }
+
+    @Override
+    public List<OnlineAccount> getAllOnlineAccount(long currentTime) {
+        Set<Object> set= redisTemplate.opsForZSet().reverseRangeByScore(onlineAccountKey,currentTime-onlineTime+1,currentTime);
+        List<OnlineAccount> onlineAccounts=new ArrayList<>();
+        if (set != null) {
+            for(Object o:set){
+                String role=(String)o;
+                String[] split = role.split(" ");
+                OnlineAccount onlineAccount=new OnlineAccount(split[0],split[1]);
+                onlineAccounts.add(onlineAccount);
+            }
+        }
+        return onlineAccounts;
+    }
+
+    @Override
+    public Long requestTime(String ip, long time, long duration) {
+        String key ="ip:"+ip;
+        return redisTemplate.opsForZSet().count(key,time-duration+1,time);
+    }
+
+    @Override
+    @Scheduled(fixedRate = 1000*60*60*3)
+    public void clearOnlineCount() {
+        long currentTime=System.currentTimeMillis();
+        redisTemplate.opsForZSet().removeRangeByScore(onlineAccountKey,-1,currentTime-onlineTime);
+    }
+
+    @Override
+    @Scheduled(fixedRate = 1000*30)
+    public void clearIpRequest() {
+       long currentTime=System.currentTimeMillis();
+       Set<String> keys=findMyAppZSets();
+       for (String key:keys) {
+           redisTemplate.opsForZSet().removeRangeByScore(key,-1,currentTime-requestTime);
+       }
+    }
+
+    //找到所有存放了ip的有序集合
+    private Set<String> findMyAppZSets(){
+        Set<String> myZSets=new HashSet<>();
+        Set<String> keys=redisTemplate.keys("ip:"+"*");
+        for(String key:keys){
+            if (redisTemplate.type(key) == DataType.ZSET) {
+                myZSets.add(key);
+            }
+        }
+        return myZSets;
     }
 }

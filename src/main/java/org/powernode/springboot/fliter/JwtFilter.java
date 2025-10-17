@@ -7,14 +7,17 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.powernode.springboot.controller.ManagerController;
 import org.powernode.springboot.exception.AuthorityError;
 import org.powernode.springboot.exception.NotLoggedInException;
+import org.powernode.springboot.exception.RequestTooMuchTime;
 import org.powernode.springboot.fliter.treatError.TreatError;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
 import org.powernode.springboot.tool.DealWithRequestTool;
 import org.powernode.springboot.tool.JwtTool;
 import org.powernode.springboot.tool.TokenContext;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -32,13 +35,13 @@ public class JwtFilter extends OncePerRequestFilter {
     String websocketPath;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
     private final LoginTokenService loginTokenService;
-    private final Logger logger;
-    public JwtFilter(LoginTokenService loginTokenService, Logger logger) {
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
+    public JwtFilter(LoginTokenService loginTokenService) {
         this.loginTokenService = loginTokenService;
-        this.logger = logger;
     }
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        long currentTime = System.currentTimeMillis();
         String url= request.getServletPath();
         //对于不需要jwt的请求，直接放行
         for(String excludedPath : excludedPaths) {
@@ -51,8 +54,10 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             Cookie[] cookies = request.getCookies();
             String role=JwtTool.findJwt(request,cookies,null,loginTokenService);
-            DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),role);
-            filterChain.doFilter(request, response);
+            if(DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),role,currentTime))
+                filterChain.doFilter(request, response);
+            else
+                throw new RequestTooMuchTime("当前账号访问频率过快");
         }
         //由于全局处理异常值处理控制器的异常，因此需要额外写
         catch (ExpiredJwtException e) {
