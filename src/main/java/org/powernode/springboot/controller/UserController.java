@@ -2,9 +2,12 @@ package org.powernode.springboot.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.powernode.springboot.bean.database.ProcessBook;
+import org.powernode.springboot.bean.database.User;
 import org.powernode.springboot.bean.vo.*;
 import org.powernode.springboot.service.database.service.mysql.*;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
+import org.powernode.springboot.service.database.service.redis.RegisterService;
+import org.powernode.springboot.service.mail.LoginService;
 import org.powernode.springboot.tool.JwtTool;
 import org.powernode.springboot.tool.TokenContext;
 import org.slf4j.Logger;
@@ -26,15 +29,19 @@ public class UserController {
     private final BookService bookService;
     private final OrdersService ordersService;
     private final LoginTokenService loginTokenService;
+    private final LoginService loginService;
+    private final RegisterService registerService;
     //一个用户认证二维码的有效时长
     private static final long QRTime=1000*60*3;
-    UserController(UserService userService, BooksService booksService, ProcessBookService processBookService, BookService bookService, OrdersService ordersService, LoginTokenService loginTokenService) {
+    UserController(UserService userService, BooksService booksService, ProcessBookService processBookService, BookService bookService, OrdersService ordersService, LoginTokenService loginTokenService, LoginService loginService, RegisterService registerService) {
         this.userService = userService;
         this.booksService = booksService;
         this.processBookService = processBookService;
         this.bookService = bookService;
         this.ordersService = ordersService;
         this.loginTokenService = loginTokenService;
+        this.loginService = loginService;
+        this.registerService = registerService;
     }
     //验证账号是否正确
     @PostMapping("/checkUserPassword")
@@ -123,5 +130,24 @@ public class UserController {
         LocalDateTime time = LocalDateTime.now();
         logger.info("编号为{}的用户请求获取他的支付码，支付金额为{}元",id,money);
         return ResponseEntity.status(200).body(JwtTool.getPayQr(id,time,money));
+    }
+
+    @GetMapping("/getRegisterVerification")
+    ResponseEntity<String> getRegisterVerification(String email){
+        if(loginService.sendVerification(email))
+            return ResponseEntity.status(200).body("发送验证码成功，三分钟内有效");
+        else
+            return ResponseEntity.status(429).body("验证码已发送过，若无请检查邮箱号是否正确，验证码失效后方可继续发送");
+    }
+
+    @PostMapping("/register")
+    ResponseEntity<Long> register(String email,String token,String name,String password){
+        if(registerService.checkVerifyCode(email,token)){
+            User user=new User(name,password,email);
+            userService.insertUser(user);
+            return ResponseEntity.status(200).body(user.getId());
+        }
+        else
+            return ResponseEntity.status(401).body(-1L);
     }
 }

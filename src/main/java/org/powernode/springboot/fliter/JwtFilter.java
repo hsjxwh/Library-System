@@ -41,7 +41,9 @@ public class JwtFilter extends OncePerRequestFilter {
     }
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        long currentTime = System.currentTimeMillis();
+        String ip=request.getRemoteAddr();
+        if(loginTokenService.isInBlackList(ip))
+            return;
         String url= request.getServletPath();
         //对于不需要jwt的请求，直接放行
         for(String excludedPath : excludedPaths) {
@@ -53,11 +55,8 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         try {
             Cookie[] cookies = request.getCookies();
-            String role=JwtTool.findJwt(request,cookies,null,loginTokenService);
-            if(DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),role,currentTime))
-                filterChain.doFilter(request, response);
-            else
-                throw new RequestTooMuchTime("当前账号访问频率过快");
+            JwtTool.findJwt(request,cookies,null,loginTokenService,true);
+            filterChain.doFilter(request, response);
         }
         //由于全局处理异常值处理控制器的异常，因此需要额外写
         catch (ExpiredJwtException e) {

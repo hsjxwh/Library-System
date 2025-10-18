@@ -1,5 +1,6 @@
 package org.powernode.springboot.service.database.service.redis.impl;
 
+import org.powernode.springboot.bean.database.BlackListAccount;
 import org.powernode.springboot.bean.database.LoginToken;
 import org.powernode.springboot.bean.database.OnlineAccount;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
@@ -21,6 +22,7 @@ public class LoginTokenServiceImpl implements LoginTokenService {
     //在线时长
     private final long onlineTime=1000*60*60*3;
     private final String onlineAccountKey="onlineAccount";
+    private final String blacklistKey="blacklist";
     //一个请求最多的存放时间
     private final long requestTime=1000*60;
 
@@ -49,19 +51,19 @@ public class LoginTokenServiceImpl implements LoginTokenService {
     }
 
     @Override
-    public void addIpRequest(String ip,String role, long time) {
+    public void addIpRequest(String ip,String role,long id, long time) {
         ZSetOperations<String,Object> zSetOperations=redisTemplate.opsForZSet();
-        zSetOperations.add("ip:"+ip,role+" "+ UUID.randomUUID(),time);
+        zSetOperations.add("ip:"+ip,role+" "+id+" "+ UUID.randomUUID(),time);
     }
 
     @Override
     public List<OnlineAccount> getAllOnlineAccount(long currentTime) {
-        Set<Object> set= redisTemplate.opsForZSet().reverseRangeByScore(onlineAccountKey,currentTime-onlineTime+1,currentTime);
+        Set<Object> set= redisTemplate.opsForZSet().reverseRangeByScore(onlineAccountKey,currentTime-onlineTime+1,Long.MAX_VALUE);
         List<OnlineAccount> onlineAccounts=new ArrayList<>();
         if (set != null) {
             for(Object o:set){
-                String role=(String)o;
-                String[] split = role.split(" ");
+                String info=(String)o;
+                String[] split = info.split(" ");
                 OnlineAccount onlineAccount=new OnlineAccount(split[0],split[1]);
                 onlineAccounts.add(onlineAccount);
             }
@@ -73,6 +75,38 @@ public class LoginTokenServiceImpl implements LoginTokenService {
     public Long requestTime(String ip, long time, long duration) {
         String key ="ip:"+ip;
         return redisTemplate.opsForZSet().count(key,time-duration+1,time);
+    }
+
+    @Override
+    public List<BlackListAccount> getBlackListAccount() {
+        List<BlackListAccount> blackListAccounts=new ArrayList<>();
+        Map<Object,Object> map=redisTemplate.opsForHash().entries(blacklistKey);
+        if(map==null||map.isEmpty())
+            return blackListAccounts;
+        for(Map.Entry<Object,Object> entry:map.entrySet()){
+            BlackListAccount blackListAccount;
+            String ip=(String)entry.getKey();
+            String value=(String)entry.getValue();
+            if(value.equals("#")){
+                blackListAccount=new BlackListAccount(ip);
+            }
+            else{
+                String[] split = value.split(" ");
+                blackListAccount=new BlackListAccount(ip,split[0],Long.parseLong(split[1]));
+            }
+            blackListAccounts.add(blackListAccount);
+        }
+        return blackListAccounts;
+    }
+
+    @Override
+    public void addBlackListAccount(String ip,String role, long id) {
+        redisTemplate.opsForHash().put(blacklistKey,ip,getBlacklistValue(role,id));
+    }
+
+    @Override
+    public void removeBlackListAccount(String ip) {
+        redisTemplate.opsForHash().delete(blacklistKey,ip);
     }
 
     @Override
@@ -92,6 +126,11 @@ public class LoginTokenServiceImpl implements LoginTokenService {
        }
     }
 
+    @Override
+    public boolean isInBlackList(String ip) {
+        return redisTemplate.opsForHash().hasKey(blacklistKey,ip);
+    }
+
     //找到所有存放了ip的有序集合
     private Set<String> findMyAppZSets(){
         Set<String> myZSets=new HashSet<>();
@@ -102,5 +141,12 @@ public class LoginTokenServiceImpl implements LoginTokenService {
             }
         }
         return myZSets;
+    }
+
+    private String getBlacklistValue(String role,long id) {
+        if(id<0|| role.isEmpty()){
+            return "#";
+        }
+        return role+" "+id;
     }
 }

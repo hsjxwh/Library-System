@@ -29,6 +29,12 @@ public class User {
         this.borrow = borrow;
     }
 
+    public User(String name, String password, String num) {
+        this.name = name;
+        this.password = password;
+        this.num = num;
+    }
+
     public User() {
     }
 

@@ -2,10 +2,7 @@ package org.powernode.springboot.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.powernode.springboot.bean.database.Books;
-import org.powernode.springboot.bean.database.OnlineAccount;
-import org.powernode.springboot.bean.database.ProcessBook;
-import org.powernode.springboot.bean.database.PurchaseBooks;
+import org.powernode.springboot.bean.database.*;
 import org.powernode.springboot.bean.vo.ImportBooksByExcelRes;
 import org.powernode.springboot.bean.vo.ManagerShowOrders;
 import org.powernode.springboot.bean.vo.RenewMessage;
@@ -81,9 +78,10 @@ public class ManagerController {
     @PostMapping("/checkIsManager")
     ResponseEntity<String> checkIsManager(HttpServletRequest request, HttpServletResponse response) {
         logger.info("正在验证是否有管理员{}的权限", TokenContext.getCurrentId());
-        JwtTool.findJwt(request,request.getCookies(),"manager",loginTokenService);
-        if(DealWithRequestTool.checkFrequency(request,loginTokenService,logger,TokenContext.getCurrentId(),"manager",System.currentTimeMillis()))
+        if(DealWithRequestTool.checkFrequency(request,loginTokenService,TokenContext.getCurrentId(),"manager",System.currentTimeMillis())) {
+            JwtTool.findJwt(request,request.getCookies(),"manager",loginTokenService,false);
             return ResponseEntity.status(200).body("拥有权限");
+        }
         else
             throw new RequestTooMuchTime("当前账号访问频率过快");
     }
@@ -325,4 +323,37 @@ public class ManagerController {
         List<OnlineAccount> accounts=loginTokenService.getAllOnlineAccount(currentTime);
         return ResponseEntity.status(200).body(accounts);
     }
+
+    @PostMapping("/forceSomeoneQuit")
+    ResponseEntity<String> forceSomeoneQuit(long id,String role){
+        long currentTime=System.currentTimeMillis();
+        logger.info("编号为{}的管理员正在强制账号为{}的{}下线",TokenContext.getCurrentId(),id,role);
+        String key=JwtTool.hashLoginInfo(role,id);
+        try {
+           loginTokenService.setTokenStartValidTime(key,currentTime);
+           return ResponseEntity.status(200).body("成功强制某用户下线");
+        }catch (Exception e){
+           return ResponseEntity.status(500).body("操作异常");
+        }
+    }
+
+    @GetMapping("/getBlackList")
+    ResponseEntity<List<BlackListAccount>> getBlackList(){
+        logger.info("编号为{}的管理员正在获取当前网站的黑名单ip",TokenContext.getCurrentId());
+        List<BlackListAccount> blackListAccounts=loginTokenService.getBlackListAccount();
+        return ResponseEntity.status(200).body(blackListAccounts);
+    }
+
+    @PostMapping("/pullOutTheBlacklist")
+    ResponseEntity<String> pullOutTheBlacklist(String ip){
+        logger.info("编号为{}的管理员正在将ip为{}的账号移出当前网站的黑名单ip",TokenContext.getCurrentId(),ip);
+        try {
+            loginTokenService.removeBlackListAccount(ip);
+            return ResponseEntity.status(200).body("成功拉出黑名单");
+        }catch (Exception e){
+            return ResponseEntity.status(500).body("拉出黑名单失败");
+        }
+    }
+
+
 }

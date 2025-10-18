@@ -4,11 +4,11 @@ import io.jsonwebtoken.*;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.powernode.springboot.exception.HaveNotAdminAuthority;
-import org.powernode.springboot.exception.IllegalLoginTokenError;
-import org.powernode.springboot.exception.NotLoggedInException;
-import org.powernode.springboot.exception.WrongCsrfError;
+import org.powernode.springboot.exception.*;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,10 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 public final class JwtTool {
     //一个登录的身份jwt能维持多长时间,3小时
@@ -36,6 +33,8 @@ public final class JwtTool {
     private static final String signRandom ="c,s?.r58f";
     //存储用户登录token是，对账号信息键进行加密的key
     private static final String signInRedis="da.'f.f";
+    Logger logger= LoggerFactory.getLogger(JwtTool.class);
+    private final static String[] loginApis={"/user/getAllLibraryStorage","/user/getCharts","/user/postRecommendToStore","/user/getUseInfo","/user/generateQrToken","/user/getBookRecord","/user/generateTestQrToken","/user/getOrdersRecord","/user/getPayQr"};
 
     //生成验证请求身份的jwtToken
     public static String getJwt(long id,String role,String csrfToken,long currentTime){
@@ -163,6 +162,21 @@ public final class JwtTool {
         return parser.setSigningKey(signWith).parseClaimsJws(jwt).getBody();
     }
 
+    //过滤器专门检查jwt是否合法的
+    public static Claims checkJwt(LoginTokenService service,String jwt,String ip){
+        if(jwt==null){
+            return null;
+        }
+        JwtParser parser = Jwts.parser();
+        try{
+            return parser.setSigningKey(signWith).parseClaimsJws(jwt).getBody();
+        } catch (ExpiredJwtException | SignatureException e){
+            service.addIpRequest(ip,"",-1,System.currentTimeMillis());
+            throw e;
+        }
+    }
+
+
     public static long getId(String jwt){
         Claims claims=checkJwt(jwt);
         if(jwt==null||jwt.isEmpty()||claims==null){
@@ -172,10 +186,11 @@ public final class JwtTool {
     }
 
     //在cookie中找到jwt并进行检查,返回角色
-    public static String findJwt(HttpServletRequest request, Cookie[] cookies, String wantRole, LoginTokenService loginTokenService){
+    public static String findJwt(HttpServletRequest request, Cookie[] cookies, String wantRole, LoginTokenService loginTokenService,boolean fromFilter){
         if(cookies==null)
             throw new NotLoggedInException("未登录，请登录后进行操作");
         String jwt=null;
+        long currentTime=System.currentTimeMillis();
         //遍历 Cookie，找到存储 JWT 的那个
         for(Cookie cookie:cookies){
             if("jwtToken".equals(cookie.getName())){
@@ -184,7 +199,16 @@ public final class JwtTool {
             }
         }
         Claims claims;
-        claims=checkJwt(jwt);
+        String uri = request.getRequestURI();
+        boolean check=fromFilter&&Arrays.asList(loginApis).contains(uri);
+        if(check) {
+            if(DealWithRequestTool.checkFrequency(request,loginTokenService,-1,"",currentTime))
+                claims = checkJwt(loginTokenService, jwt, request.getRemoteAddr());
+            else
+                throw new RequestTooMuchTime("访问频率过快");
+        }
+        else
+            claims=checkJwt(jwt);
         if(jwt==null||jwt.isEmpty()||claims==null){
             throw new NotLoggedInException("未登录，请登录后进行操作");
         }
@@ -193,6 +217,9 @@ public final class JwtTool {
         long id=Long.parseLong(claims.get("id").toString());
         long getTime=Long.parseLong(claims.get("time").toString());
         String key=hashLoginInfo(role,id);
+        if(!check&&!DealWithRequestTool.checkFrequency(request,loginTokenService,id,role,currentTime)){
+            throw new RequestTooMuchTime("访问频率过快");
+        }
         long startValidTime=loginTokenService.getTokenStartValidTime(key);
         //token的创建时间必须再指定的有效时间之后
         if(getTime<startValidTime){

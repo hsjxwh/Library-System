@@ -3,7 +3,7 @@
 <mapper namespace="org.powernode.springboot.mapper.database.UserMapper">
     <insert id="insertUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
         insert into user(id,name,password,num,balance,has_service,borrow)
-            values (null,#{name},#{password},#{num},#{balance},#{hasService},0)
+            values (null,#{name},#{password},#{num},0,0,0)
     </insert>
     <update id="updateUser">
         update user
