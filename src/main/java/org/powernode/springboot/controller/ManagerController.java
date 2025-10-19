@@ -355,5 +355,18 @@ public class ManagerController {
         }
     }
 
+    @PostMapping("/quit")
+    ResponseEntity<String> forceSomeoneQuit(){
+        long currentTime=System.currentTimeMillis();
+        long id=TokenContext.getCurrentId();
+        logger.info("编号为{}的管理管请求下线",id);
+        String key=JwtTool.hashLoginInfo("manager",id);
+        try {
+            loginTokenService.setTokenStartValidTime(key,currentTime);
+            return ResponseEntity.status(200).body("成功下线");
+        }catch (Exception e){
+            return ResponseEntity.status(500).body("操作异常");
+        }
+    }
 
 }

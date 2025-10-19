@@ -5,6 +5,7 @@ import org.powernode.springboot.service.mail.LoginService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -18,15 +19,18 @@ public class LoginServiceImpl implements LoginService {
     Logger logger = LoggerFactory.getLogger(LoginServiceImpl.class);
     @Autowired
     private RegisterService registerService;
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     @Override
     public boolean sendVerification( String email) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
         message.setTo(email);
         if(registerService.hasVerifyCode(email))
             return false;
         message.setSubject("图书网站张开开通");
-        String token = UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString().substring(0,6);
         logger.info("邮箱{}请求创建账号,正在生成验证码",email);
         registerService.setVerifyCode(email, token);
         message.setText("您好，您当前正在注册的是图书网站的账号，您的验证码是:"+token);

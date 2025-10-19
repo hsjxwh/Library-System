@@ -141,7 +141,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    ResponseEntity<Long> register(String email,String token,String name,String password){
+    ResponseEntity<Long> register(@RequestParam String email,@RequestParam String token,@RequestParam String name,@RequestParam String password){
         if(registerService.checkVerifyCode(email,token)){
             User user=new User(name,password,email);
             userService.insertUser(user);
@@ -149,5 +149,19 @@ public class UserController {
         }
         else
             return ResponseEntity.status(401).body(-1L);
+    }
+
+    @PostMapping("/quit")
+    ResponseEntity<String> forceSomeoneQuit(){
+        long currentTime=System.currentTimeMillis();
+        long id=TokenContext.getCurrentId();
+        logger.info("编号为{}的用户请求下线",id);
+        String key=JwtTool.hashLoginInfo("user",id);
+        try {
+            loginTokenService.setTokenStartValidTime(key,currentTime);
+            return ResponseEntity.status(200).body("成功下线");
+        }catch (Exception e){
+            return ResponseEntity.status(500).body("操作异常");
+        }
     }
 }
