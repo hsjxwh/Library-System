@@ -1,7 +1,7 @@
 package org.powernode.springboot.mapper.database;
 
 import org.apache.ibatis.annotations.Param;
-import org.powernode.springboot.bean.database.Score;
+import org.powernode.springboot.bean.mysql.Score;
 
 import java.util.List;
 

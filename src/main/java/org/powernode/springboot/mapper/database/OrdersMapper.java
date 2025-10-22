@@ -1,11 +1,9 @@
 package org.powernode.springboot.mapper.database;
 
-import org.apache.ibatis.annotations.Param;
-import org.powernode.springboot.bean.database.Orders;
+import org.powernode.springboot.bean.mysql.Orders;
 import org.powernode.springboot.bean.vo.ManagerShowOrders;
 import org.powernode.springboot.bean.vo.UserShowOrders;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrdersMapper {

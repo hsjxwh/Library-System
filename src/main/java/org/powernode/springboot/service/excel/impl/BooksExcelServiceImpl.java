@@ -1,7 +1,7 @@
 package org.powernode.springboot.service.excel.impl;
 
 import com.alibaba.excel.EasyExcel;
-import org.powernode.springboot.bean.database.Books;
+import org.powernode.springboot.bean.mysql.Books;
 import org.powernode.springboot.bean.vo.ImportBooksByExcelRes;
 import org.powernode.springboot.service.database.service.mysql.BooksService;
 import org.powernode.springboot.service.excel.BooksExcelService;

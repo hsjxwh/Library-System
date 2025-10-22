@@ -1,9 +1,7 @@
 package org.powernode.springboot.mapper.database;
 
 import org.apache.ibatis.annotations.Param;
-import org.powernode.springboot.bean.database.Book;
 import org.powernode.springboot.bean.vo.ShowBook;
-import org.springframework.security.core.parameters.P;
 
 import java.time.LocalDateTime;
 import java.util.List;

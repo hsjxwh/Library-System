@@ -1,6 +1,6 @@
 package org.powernode.springboot.service.database.service.mysql;
 
-import org.powernode.springboot.bean.database.Score;
+import org.powernode.springboot.bean.mysql.Score;
 
 import java.util.List;
 

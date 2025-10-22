@@ -1,8 +1,7 @@
 package org.powernode.springboot.service.database.service.redis;
 
-import org.powernode.springboot.bean.database.BlackListAccount;
-import org.powernode.springboot.bean.database.LoginToken;
-import org.powernode.springboot.bean.database.OnlineAccount;
+import org.powernode.springboot.bean.redis.BlackListAccount;
+import org.powernode.springboot.bean.redis.OnlineAccount;
 
 import java.util.List;
 

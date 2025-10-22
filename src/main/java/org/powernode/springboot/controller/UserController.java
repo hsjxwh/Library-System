@@ -1,8 +1,8 @@
 package org.powernode.springboot.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.powernode.springboot.bean.database.ProcessBook;
-import org.powernode.springboot.bean.database.User;
+import org.powernode.springboot.bean.mysql.ProcessBook;
+import org.powernode.springboot.bean.mysql.User;
 import org.powernode.springboot.bean.vo.*;
 import org.powernode.springboot.service.database.service.mysql.*;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;

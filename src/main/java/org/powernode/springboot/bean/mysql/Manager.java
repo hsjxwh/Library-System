@@ -1,4 +1,4 @@
-package org.powernode.springboot.bean.database;
+package org.powernode.springboot.bean.mysql;
 
 public class Manager {
     long id;

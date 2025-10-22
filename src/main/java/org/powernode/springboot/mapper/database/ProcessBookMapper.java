@@ -1,7 +1,7 @@
 package org.powernode.springboot.mapper.database;
 
 import org.apache.ibatis.annotations.Param;
-import org.powernode.springboot.bean.database.ProcessBook;
+import org.powernode.springboot.bean.mysql.ProcessBook;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,7 +1,7 @@
 package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
-import org.powernode.springboot.bean.database.BorrowTime;
+import org.powernode.springboot.bean.mysql.BorrowTime;
 import org.powernode.springboot.mapper.database.BorrowTimeMapper;
 import org.powernode.springboot.service.database.service.mysql.BorrowTimeService;
 import org.springframework.beans.factory.annotation.Autowired;

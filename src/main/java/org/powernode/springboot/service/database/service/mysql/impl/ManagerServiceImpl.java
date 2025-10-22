@@ -1,7 +1,7 @@
 package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
-import org.powernode.springboot.bean.database.Manager;
+import org.powernode.springboot.bean.mysql.Manager;
 import org.powernode.springboot.mapper.database.ManagerMapper;
 import org.powernode.springboot.service.database.service.mysql.ManagerService;
 import org.springframework.beans.factory.annotation.Autowired;

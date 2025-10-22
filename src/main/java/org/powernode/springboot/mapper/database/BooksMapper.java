@@ -1,9 +1,8 @@
 package org.powernode.springboot.mapper.database;
 
 import org.apache.ibatis.annotations.Param;
-import org.powernode.springboot.bean.database.Books;
+import org.powernode.springboot.bean.mysql.Books;
 import org.powernode.springboot.bean.vo.Chart;
-import org.springframework.security.core.parameters.P;
 
 import java.util.List;
 

@@ -1,20 +1,15 @@
 package org.powernode.springboot.service.database.service.redis.impl;
 
-import org.powernode.springboot.bean.database.BlackListAccount;
-import org.powernode.springboot.bean.database.LoginToken;
-import org.powernode.springboot.bean.database.OnlineAccount;
+import org.powernode.springboot.bean.redis.BlackListAccount;
+import org.powernode.springboot.bean.redis.OnlineAccount;
 import org.powernode.springboot.service.database.service.redis.LoginTokenService;
-import org.powernode.springboot.tool.JwtTool;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class LoginTokenServiceImpl implements LoginTokenService {

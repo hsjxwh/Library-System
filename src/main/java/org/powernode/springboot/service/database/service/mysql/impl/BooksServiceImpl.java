@@ -1,7 +1,7 @@
 package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
-import org.powernode.springboot.bean.database.Books;
+import org.powernode.springboot.bean.mysql.Books;
 import org.powernode.springboot.bean.vo.BooksStorage;
 import org.powernode.springboot.bean.vo.Chart;
 import org.powernode.springboot.exception.SourceRepeatError;

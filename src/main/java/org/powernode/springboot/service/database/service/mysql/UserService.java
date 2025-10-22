@@ -1,6 +1,6 @@
 package org.powernode.springboot.service.database.service.mysql;
 
-import org.powernode.springboot.bean.database.User;
+import org.powernode.springboot.bean.mysql.User;
 import org.powernode.springboot.bean.vo.UserInfo;
 
 import java.util.List;

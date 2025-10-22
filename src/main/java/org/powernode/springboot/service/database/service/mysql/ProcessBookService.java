@@ -1,6 +1,6 @@
 package org.powernode.springboot.service.database.service.mysql;
 
-import org.powernode.springboot.bean.database.ProcessBook;
+import org.powernode.springboot.bean.mysql.ProcessBook;
 
 import java.time.LocalDateTime;
 import java.util.List;

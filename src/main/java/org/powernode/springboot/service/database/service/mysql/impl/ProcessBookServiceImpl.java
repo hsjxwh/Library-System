@@ -1,7 +1,7 @@
 package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
-import org.powernode.springboot.bean.database.ProcessBook;
+import org.powernode.springboot.bean.mysql.ProcessBook;
 import org.powernode.springboot.mapper.database.ProcessBookMapper;
 import org.powernode.springboot.service.database.service.mysql.ProcessBookService;
 import org.springframework.beans.factory.annotation.Autowired;

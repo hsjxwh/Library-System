@@ -1,4 +1,4 @@
-package org.powernode.springboot.bean.database;
+package org.powernode.springboot.bean.redis;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

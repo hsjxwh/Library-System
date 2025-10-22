@@ -1,7 +1,7 @@
 package org.powernode.springboot.service.database.service.mysql.impl;
 
 import org.powernode.springboot.annotation.TransactionFail;
-import org.powernode.springboot.bean.database.User;
+import org.powernode.springboot.bean.mysql.User;
 import org.powernode.springboot.bean.vo.UserInfo;
 import org.powernode.springboot.mapper.database.ScoreMapper;
 import org.powernode.springboot.mapper.database.UserMapper;

@@ -1,8 +1,7 @@
 package org.powernode.springboot.mapper.database;
 
 import org.apache.ibatis.annotations.Param;
-import org.powernode.springboot.bean.database.BorrowTime;
-import org.springframework.security.core.parameters.P;
+import org.powernode.springboot.bean.mysql.BorrowTime;
 
 import java.util.List;
 

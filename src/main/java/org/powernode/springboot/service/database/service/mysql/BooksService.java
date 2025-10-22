@@ -1,6 +1,6 @@
 package org.powernode.springboot.service.database.service.mysql;
 
-import org.powernode.springboot.bean.database.Books;
+import org.powernode.springboot.bean.mysql.Books;
 import org.powernode.springboot.bean.vo.BooksStorage;
 import org.powernode.springboot.bean.vo.Chart;
 

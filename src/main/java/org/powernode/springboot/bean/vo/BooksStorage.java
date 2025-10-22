@@ -1,8 +1,6 @@
 package org.powernode.springboot.bean.vo;
 
-import org.powernode.springboot.bean.database.Books;
-
-import java.util.Base64;
+import org.powernode.springboot.bean.mysql.Books;
 
 public class BooksStorage {
     long id;
