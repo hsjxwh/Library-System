@@ -3,9 +3,11 @@ package org.powernode.springboot.websocket.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import org.powernode.springboot.exception.LackOfInfo;
 import org.powernode.springboot.service.database.service.mysql.OrdersService;
 import org.powernode.springboot.service.database.service.mysql.UserService;
 import org.powernode.springboot.tool.JwtTool;
+import org.powernode.springboot.websocket.ServiceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -43,9 +45,11 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
     //存储会话
     private static final ConcurrentHashMap<Long, Map<String,WebSocketSession>> sessions=new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Long,String> tokenMap=new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, ServiceInfo> serviceInfos=new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
     private final OrdersService ordersService;
     private final UserService userService;
+
     public ManagerWebSocketHandler(OrdersService ordersService,ObjectMapper objectMapper,UserService userService) {
         this.ordersService=ordersService;
         this.objectMapper=objectMapper;
@@ -125,21 +129,33 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
             else if(status==MessageType.PAY_CODE.getCode()&&device.equals("phone")){
                 logger.info("编号为{}的管理员在{}端发送了扫描到的付款吗信息，检测是否合法,当前应对的使用户开通借阅服务功能",id,device);
                 treatActivateService(getMessage,id,device);
+                clearInfo(id);
             }
             //只有手机端能够发送识别到的付款吗，使手机能获取扫码后发送请求需要的信息
             else if(status==MessageType.CHANGE_PHONE_STATUS_TO_START_SERVICE.getCode()&&device.equals("pc")){
                 sendMessage(sessions.get(id).get("phone"),id,device,getMessage);
-                logger.info("服务器讲编号为{}的管理员的手机端改变状态以成功扫描用户的付款码,开通服务",id);
+                serviceInfos.putIfAbsent(id,new ServiceInfo());
+                ServiceInfo serviceInfo=serviceInfos.get(id);
+                serviceInfo.setServiceType(getMessage.getServiceType());
+                serviceInfo.setBalance(getMessage.getRecharge());
+                serviceInfo.setPurpose(getMessage.getPurpose());
+                logger.info("服务器讲编号为{}的管理员的手机端改变状态以成功扫描用户的付款码,准备开通{}服务,",id,session);
             }
             //只有电脑端能发送信息该改变手机端的状态
             else if(status==MessageType.CHANGE_PHONE_STATUS_TO_RECHARGE.getCode()&&device.equals("pc")){
                 sendMessage(sessions.get(id).get("phone"),id,device,getMessage);
-                logger.info("服务器讲编号为{}的管理员的手机端改变状态以成功扫描用户的付款码，进行充值",id);
+                serviceInfos.putIfAbsent(id,new ServiceInfo());
+                ServiceInfo serviceInfo=serviceInfos.get(id);
+                serviceInfo.setBalance(getMessage.getRecharge());
+                String purpose=getMessage.getPurpose();
+                serviceInfo.setPurpose(purpose);
+                logger.info("服务器将编号为{}的管理员的手机端改变状态以成功扫描用户的付款码，准备进行充值{}元",id,purpose);
             }
             //只有手机端能够发送识别到的付款码，开启充值服务
             else if(status==MessageType.RECHARGE_CODE.getCode()&&device.equals("phone")){
                 logger.info("编号为{}的管理员在{}端发送了扫描到的付款吗信息，检测是否合法，当前应对的使用户充值服务",id,device);
                 treatRechargeService(getMessage,id,device);
+                clearInfo(id);
             }
             //只能手机端发送SUCCESS_TRANS
             else if(device.equals("phone")&&MessageType.TRANS_ID.getCode()==status){
@@ -190,6 +206,18 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private void clearInfo(long id){
+        serviceInfos.get(id).clearInfo();
+    }
+
+    private void checkPayInfo(long id){
+        serviceInfos.get(id).checkPayInfo();
+    }
+
+    private void checkActivateServiceInfo(long id){
+        serviceInfos.get(id).checkActivateServiceInfo();
+    }
+
     //关闭所有当前管理员建立的连接
     private void closeAllSession(WebSocketSession session,long id,String message,int status){
         try {
@@ -210,14 +238,18 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+
+
+
     private void treatRechargeService(Message getMessage,long id,String device){
         try {
+            checkPayInfo(id);
             String message=getMessage.getMessage();
             Claims claims=JwtTool.checkJwt(message);
             long userId=Long.parseLong(claims.get("id").toString());
-            String purpose=getMessage.getPurpose();
             LocalDateTime time=LocalDateTime.now();
-            double balance=getMessage.getRecharge();
+            String purpose=serviceInfos.get(id).getPurpose();
+            double balance=serviceInfos.get(id).getBalance();
             logger.info("编号为{}的管理员正在处理来自编号为{}用户的目的为充值，金额大小为{}的订单",id,userId,balance);
             if(ordersService.insertOrders(userId,id,balance,3,purpose,time,-1)>0){
                 logger.info("编号为{}的管理员正在处理编号为{}用户的目的为充值，金额大小为{}的订单成功",id,userId,balance);
@@ -235,26 +267,27 @@ public class ManagerWebSocketHandler extends TextWebSocketHandler {
     //处理开通服务业务
     private void treatActivateService(Message getMessage,long id,String device){
         try {
+            checkActivateServiceInfo(id);
             String message=getMessage.getMessage();
             Claims claims=JwtTool.checkJwt(message);
             long userId=Long.parseLong(claims.get("id").toString());
-            double money=Double.parseDouble(claims.get("money").toString());
-            String purpose=getMessage.getPurpose();
             LocalDateTime time=LocalDateTime.now();
-            logger.info("编号为{}的管理员正在处理来自编号为{}用户的目的为开通借阅服务，金额大小为{}的订单",id,userId,money);
-            int serviceType= getMessage.getServiceType();
+            String purpose=serviceInfos.get(id).getPurpose();
+            double balance=serviceInfos.get(id).getBalance();
+            int serviceType=serviceInfos.get(id).getServiceType();
+            logger.info("编号为{}的管理员正在处理来自编号为{}用户的目的为开通借阅服务，金额大小为{}的订单",id,userId,balance);
             //非法服务类型
             if(serviceType!=1&&serviceType!=2){
-                logger.info("编号为{}的管理员在处理来自编号为{}用户的目的为{}，金额大小为{}的订单时，发现其开通服务的类型存在异常",id,userId,purpose,money);
+                logger.info("编号为{}的管理员在处理来自编号为{}用户的目的为{}，金额大小为{}的订单时，发现其开通服务的类型存在异常",id,userId,purpose,balance);
                 return;
             }
-            if(ordersService.insertOrders(userId,id,money,serviceType,purpose,time,-1)>0) {
-                logger.info("编号为{}的管理员处理来自编号为{}用户的目的为{}，金额大小为{}的订单成功",id,userId,purpose,money);
-                sendMessage(sessions.get(id).get("pc"),id,device,new Message("订单创建成功，用户编码为"+userId+"金额为"+money+"元",MessageType.PAY_CODE.getCode()));
+            if(ordersService.insertOrders(userId,id,balance,serviceType,purpose,time,-1)>0) {
+                logger.info("编号为{}的管理员处理来自编号为{}用户的目的为{}，金额大小为{}的订单成功",id,userId,purpose,balance);
+                sendMessage(sessions.get(id).get("pc"),id,device,new Message("订单创建成功，用户编码为"+userId+"金额为"+balance+"元",MessageType.PAY_CODE.getCode()));
             }
             else {
-                logger.info("编号为{}的管理员处理来自编号为{}用户的目的为{}，金额大小为{}的订单失败",id,userId,purpose,money);
-                sendMessage(sessions.get(id).get("pc"),id,device,new Message("订单创建失败，用户编码为"+userId+"金额为"+money+"元",MessageType.PAY_CODE.getCode()));
+                logger.info("编号为{}的管理员处理来自编号为{}用户的目的为{}，金额大小为{}的订单失败",id,userId,purpose,balance);
+                sendMessage(sessions.get(id).get("pc"),id,device,new Message("订单创建失败，用户编码为"+userId+"金额为"+balance+"元",MessageType.PAY_CODE.getCode()));
             }
         } catch (ExpiredJwtException e) {
             logger.info("编号为{}的管理员在处理开启服务的订单时，发现当前的付款吗已经过期",id);

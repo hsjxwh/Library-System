@@ -126,10 +126,10 @@ public class UserController {
 
     //测试支付的程序
     @GetMapping("/getPayQr")
-    ResponseEntity<String> getPayQrToken(long id,double money,String purpose){
+    ResponseEntity<String> getPayQrToken(long id){
         LocalDateTime time = LocalDateTime.now();
-        logger.info("编号为{}的用户请求获取他的支付码，支付金额为{}元",id,money);
-        return ResponseEntity.status(200).body(JwtTool.getPayQr(id,time,money));
+        logger.info("编号为{}的用户请求获取他的支付码",id);
+        return ResponseEntity.status(200).body(JwtTool.getPayQr(id,time));
     }
 
     @GetMapping("/getRegisterVerification")

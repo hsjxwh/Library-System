@@ -105,4 +105,16 @@ public class GlobalErrorResponse {
     public ResponseEntity<String> handleWithRequestTooMuchTime(Exception e) {
         return ResponseEntity.status(429).body(e.getMessage());
     }
+
+    @ExceptionHandler(LackOfInfo.class)
+    @ResponseBody
+    public ResponseEntity<String> handelWithLackOfInfo(Exception e) {
+        return ResponseEntity.status(400).body(e.getMessage());
+    }
+
+    @ExceptionHandler(ErrorRequestParamError.class)
+    @ResponseBody
+    public ResponseEntity<String> handleWithErrorRequestError(Exception e){
+        return ResponseEntity.status(404).body(e.getMessage());
+    }
 }

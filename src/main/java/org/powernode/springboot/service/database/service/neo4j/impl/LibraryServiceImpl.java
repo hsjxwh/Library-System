@@ -11,6 +11,7 @@ import org.powernode.springboot.service.database.service.neo4j.LibraryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.neo4j.core.Neo4jTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,50 +29,56 @@ public class LibraryServiceImpl implements LibraryService {
     @Autowired
     private Neo4jTemplate template;
     @Override
-    public Author addAuthor(Author author) {
+    @Transactional
+    public void addAuthor(Author author) {
         authorRepository.save(author);
-        return author;
     }
 
     @Override
-    public Type addType(Type type) {
+    @Transactional
+    public void addType(Type type) {
         typeRepository.save(type);
-        return null;
     }
 
     @Override
-    public Book addBook(Book book) {
+    @Transactional
+    public void addBook(Book book) {
         bookRepository.save(book);
-        return null;
     }
 
     @Override
+    @Transactional
     public List<String> addAuthors(List<Author> authors) {
-        return List.of();
+        return authorRepository.addAuthors(authors);
     }
 
     @Override
-    public HashMap<String, List<String>> addBooks(List<Book> books) {
-        return null;
+    @Transactional
+    public List<String> addBooks(List<Book> books) {
+        return bookRepository.addBooks(books);
     }
 
     @Override
+    @Transactional
     public List<String> addTypes(List<Type> types) {
-        return List.of();
+        return typeRepository.addTypes(types);
     }
 
     @Override
-    public Book deleteBook(Book book) {
-        return null;
+    @Transactional
+    public void deleteBook(Book book) {
+        bookRepository.delete(book);
     }
 
     @Override
-    public Author deleteAuthor(Author author) {
-        return null;
+    @Transactional
+    public void deleteAuthor(Author author) {
+        authorRepository.delete(author);
     }
 
     @Override
-    public Type deleteType(Type type) {
-        return null;
+    @Transactional
+    public void deleteType(Type type) {
+        typeRepository.delete(type);
     }
 }

@@ -104,12 +104,11 @@ public final class JwtTool {
                 //签名
                 .signWith(SignatureAlgorithm.HS256,signWith)
                 .compact();
-        System.out.println("Generated JWT: " + res);
         return res;
     }
 
     //获取付款吗token
-    public static String getPayQr(long id,LocalDateTime time,double money){
+    public static String getPayQr(long id,LocalDateTime time){
         String res=  Jwts.builder()
                 //类型
                 .setHeaderParam("typ","JWT")
@@ -117,7 +116,6 @@ public final class JwtTool {
                 .setHeaderParam("alg","HS256")
                 .claim("id",id)
                 .claim("role","user")
-                .claim("money",money)
                 .claim("time",time.toInstant(ZoneOffset.UTC).toEpochMilli() )
                 //设置过期时间
                 .setExpiration(new Date(System.currentTimeMillis()+payTime))
@@ -128,7 +126,6 @@ public final class JwtTool {
                 //签名
                 .signWith(SignatureAlgorithm.HS256,signWith)
                 .compact();
-        System.out.println("Generated JWT: " + res);
         return res;
     }
 

@@ -13,7 +13,7 @@ public interface TypeRepository extends Neo4jRepository<Type,Long> {
                 WHERE type.type is not null
                 MERGE (n:Type {type:type.name})
                 ON CREATE SET
-                    n.type=type
+                    n.type=type,
                     n.wasCreated = true
                 ON MATCH SET
                     n.wasCreated = false

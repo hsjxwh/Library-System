@@ -41,7 +41,9 @@ public class Neo4jConstraintInitializerConfig {
     }
 
     private void createBookConstraints(Session session) {
-        session.run("CREATE CONSTRAINT book_unique_id_and_name FOR (n:Book) REQUIRE (n.id,n.title) IS NODE KEY");
+        session.run("create constraint book_id_unique for (n:book) require n.id is unique");
+        session.run("create constraint title_unique for (n:book) require n.title is unique");
+        session.run("create constraint title_unique for (n:book) require n.title is unique");
         logger.info("书籍唯一约束成功");
     }
 

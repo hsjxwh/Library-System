@@ -13,17 +13,16 @@ public interface BookRepository  extends Neo4jRepository<Book, Long> {
             UNWIND $books AS book
                 MERGE (a:Author {name:book.author.name})
                 MERGE (t:Type {type:book.type.type})
-                MERGE (b:Book {title:book.title,id:book.id})
+                MERGE (b:Book {title:book.title,id:book.id,idAndTitle:book.idAndTitle})
                 MERGE (b)-[:WRITER]->(a)
                 MERGE (b)-[:BELONG]->(t)
-                RETURN b
+                RETURN b.title
                 ;
             """)
-
-    List<Book> addBooks(List<Book> books);
+    List<String> addBooks(List<Book> books);
     @Query("""
             UNWIND $book AS book
-                MATCH (b:Book {title:book.title,id:book.id})-
+                MATCH (b:Book {title:idAndTitle:book.idAndTitle})-
                     [r:WRITER]->(a:Author {name:book.author.name})
                 delete r;
             """)
@@ -31,7 +30,7 @@ public interface BookRepository  extends Neo4jRepository<Book, Long> {
 
     @Query("""
             UNWIND $book AS book
-            MATCH (b:Book {title:book.title,id:book.id})-
+            MATCH (b:Book {idAndTitle:book.idAndTitle})-
                 [r:BELONG]->(t:Type {type:book.type.type})
             delete r;
             """)

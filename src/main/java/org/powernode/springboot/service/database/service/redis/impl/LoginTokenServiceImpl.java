@@ -112,7 +112,7 @@ public class LoginTokenServiceImpl implements LoginTokenService {
     }
 
     @Override
-    @Scheduled(fixedRate = 1000*30)
+    @Scheduled(fixedRate = 1000*60*60*12)
     public void clearIpRequest() {
        long currentTime=System.currentTimeMillis();
        Set<String> keys=findMyAppZSets();
