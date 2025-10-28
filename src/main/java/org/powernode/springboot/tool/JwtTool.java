@@ -130,7 +130,7 @@ public final class JwtTool {
     }
 
     //设置前端的cookie,并把生成的登录token返回
-    public static void setCookie(HttpServletResponse response,Long id, String role,long currentTime){
+    public static String setCookie(HttpServletResponse response,Long id, String role,long currentTime){
         String csrfToken = UUID.randomUUID().toString();
         String jwt=getJwt(id,role,csrfToken,currentTime);
         //将jwt添加到httponly cookie
@@ -141,13 +141,7 @@ public final class JwtTool {
                     "Secure;" +    // HTTPS环境必需
                     "SameSite=None;" +  // 跨域请求允许携带
                     "Max-Age=" + time/1000);
-        //设置csrf token到httponly cookie
-        response.addHeader("Set-Cookie",
-                "CSRF-TOKEN=" + csrfToken +
-                    "; Path=/;" +
-                    "Secure;" +
-                    "SameSite=None;" +
-                    "Max-Age=" + time/1000);
+        return csrfToken;
     }
 
     //专门检查jwt是否合法的

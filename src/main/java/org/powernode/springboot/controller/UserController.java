@@ -49,11 +49,11 @@ public class UserController {
         logger.info("用户{}正在登录中。。", id);
         long currentTime=System.currentTimeMillis();
         if(userService.checkPassword(id,password)){
-            JwtTool.setCookie(response,id,"user",currentTime);
+            String csrfToken=JwtTool.setCookie(response,id,"user",currentTime);
             logger.info("将用户{}假如张倩网站在线用户人数列表",id);
             loginTokenService.addOnlineCount("user",id,currentTime);
             logger.info("用户{}登录成功", id);
-            return ResponseEntity.status(200).body("登录成功");
+            return ResponseEntity.status(200).header("X-CSRF-TOKEN",csrfToken).body("登录成功");
         }
         logger.info("用户{}登录失败",id);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("账号/密码错误");

@@ -67,11 +67,11 @@ public class ManagerController {
         logger.info("管理员{}正在登录中",id);
         long currentTime=System.currentTimeMillis();
         if(managerService.checkPassword(id,password)){
-            JwtTool.setCookie(response,id,"manager",currentTime);
+            String csrfToken=JwtTool.setCookie(response,id,"manager",currentTime);
             logger.info("将管理员{}假如张倩网站在线用户人数列表",id);
             loginTokenService.addOnlineCount("manager",id,currentTime);
             logger.info("管理员{}登录成功",id);
-            return ResponseEntity.status(200).body("登录成功");
+            return ResponseEntity.status(200).header("X-CSRF-TOKEN", csrfToken).body("登录成功");
         }
         logger.info("管理员{}登录失败",id);
         return ResponseEntity.status(HttpStatusCode.valueOf(401)).body("账号/密码错误");

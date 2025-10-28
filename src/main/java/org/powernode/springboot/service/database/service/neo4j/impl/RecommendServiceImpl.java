@@ -20,18 +20,26 @@ public class RecommendServiceImpl implements RecommendService {
     @Override
     @Transactional
     public void addBookRecord(long userId, long bookId) {
-        if(!bookRepository.existsById(bookId)||!accountRepository.existsById(userId)) {
-            throw new ErrorRequestParamError("没有这个编号的数据，或者没有这个编号的用户");
-        }
+        checkInfo(userId,bookId);
         calculateSimilarityRepository.addBookRecord(userId, bookId);
     }
 
     @Override
     @Transactional
     public void addRenewRecord(long userId, long bookId) {
+        checkInfo(userId,bookId);
+        calculateSimilarityRepository.addRenewRecord(userId, bookId);
+    }
+
+    @Override
+    public void addClickRecord(long userId, long bookId) {
+        checkInfo(userId,bookId);
+        calculateSimilarityRepository.addClickRecord(userId, bookId);
+    }
+
+    void checkInfo(long userId,long bookId) {
         if(!bookRepository.existsById(bookId)||!accountRepository.existsById(userId)) {
             throw new ErrorRequestParamError("没有这个编号的数据，或者没有这个编号的用户");
         }
-        calculateSimilarityRepository.addRenewRecord(userId, bookId);
     }
 }

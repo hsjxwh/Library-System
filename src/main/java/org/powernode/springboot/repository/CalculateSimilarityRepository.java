@@ -25,4 +25,13 @@ public interface CalculateSimilarityRepository extends Neo4jRepository<Book, Lon
                 r.time=r.time+1
             """)
     void addRenewRecord(long userId,long renewId);
+    @Query("""
+            merge (u:Account {id:$userId})-
+                [r:CLICK]->(b：Book:Book {id:$bookId})
+            on create set
+                r.time=1
+            on match set
+                r.time=r.time+1
+            """)
+    void addClickRecord(long userId,long clickId);
 }
